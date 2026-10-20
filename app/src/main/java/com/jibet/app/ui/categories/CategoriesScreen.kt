@@ -64,6 +64,7 @@ import com.jibet.app.ui.components.EmojiBadge
 import com.jibet.app.ui.components.EmptyState
 import com.jibet.app.ui.components.ProgressBarSoft
 import com.jibet.app.ui.components.SectionTitle
+import com.jibet.app.ui.components.parseHex
 import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.util.Defaults
 import com.jibet.app.util.Fmt
