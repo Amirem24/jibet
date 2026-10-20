@@ -122,7 +122,7 @@ class JibetRepository(
         val (start, end, bucketsSeed) = when (period) {
             "week" -> {
                 val (s, e) = JDate.persianWeekRange(ref)
-                Triple(s, e, weekBuckets(s))
+                Triple(s, e, weekBuckets(JDate.localDate(s)))
             }
             "year" -> {
                 val (s, e, j) = JDate.jalaliYearRange(ref)
@@ -293,7 +293,7 @@ class JibetRepository(
     suspend fun addBudget(categoryId: Long, jYear: Int, jMonth: Int, amount: Double): Long {
         val existing = dao.findBudget(categoryId, jYear, jMonth)
         return dao.insertBudget(
-            (existing ?: BudgetEntity(categoryId = categoryId, jYear = jYear, jMonth = jMonth))
+            (existing ?: BudgetEntity(categoryId = categoryId, jYear = jYear, jMonth = jMonth, amount = 0.0))
                 .copy(amount = amount)
         )
     }

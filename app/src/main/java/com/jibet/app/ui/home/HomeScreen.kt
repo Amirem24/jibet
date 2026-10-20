@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -258,7 +259,7 @@ private fun BalanceCard(totalBalance: Double) {
         // حباب‌های نور تزئینی — مثل blur-2xl وب
         Box(
             Modifier
-                .align(Alignment.AbsoluteAlignment.TopLeft)
+                .align(AbsoluteAlignment.TopLeft)
                 .absoluteOffset(x = (-40).dp, y = (-56).dp)
                 .size(160.dp)
                 .blur(30.dp)
@@ -267,7 +268,7 @@ private fun BalanceCard(totalBalance: Double) {
         )
         Box(
             Modifier
-                .align(Alignment.AbsoluteAlignment.BottomRight)
+                .align(AbsoluteAlignment.BottomRight)
                 .absoluteOffset(x = 24.dp, y = 64.dp)
                 .size(176.dp)
                 .blur(30.dp)

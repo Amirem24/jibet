@@ -51,7 +51,7 @@ fun JibetSheet(
         contentColor = Color.Unspecified,
         scrimColor = Color(0x59232B3B),
         dragHandle = null,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
         Column(

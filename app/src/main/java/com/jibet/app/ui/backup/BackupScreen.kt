@@ -41,7 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.graphicsLayer
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -80,6 +80,8 @@ import kotlinx.coroutines.withContext
 
 class BackupViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as JibetApp).repository
+
+    private var restoring by mutableStateOf(false)
 
     /** ذخیره‌ی فایل پشتیبان JSON روی URI انتخاب‌شده با SAF */
     fun exportBackup(context: Context, uri: Uri) {

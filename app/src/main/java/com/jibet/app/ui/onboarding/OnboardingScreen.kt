@@ -31,7 +31,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.absoluteOffsetWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -82,10 +84,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Rect
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
@@ -837,7 +841,7 @@ private fun AccountCard(
             Box {
                 IconBubble(icon = account.icon, color = parseColor(account.color), size = 44.dp)
                 // بج تیک — بالا-چپ حباب مثل وب
-                AnimatedVisibility(
+                androidx.compose.animation.AnimatedVisibility(
                     visible = selected,
                     enter = scaleIn(spring(dampingRatio = 0.54f, stiffness = 500f)),
                     exit = scaleOut(spring(dampingRatio = 0.54f, stiffness = 500f)),

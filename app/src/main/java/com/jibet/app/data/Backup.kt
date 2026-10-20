@@ -1,5 +1,6 @@
 package com.jibet.app.data
 
+import androidx.room.withTransaction
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
@@ -264,5 +265,6 @@ suspend fun JibetRepository.exportCsv(): String {
     return "\uFEFF" + (listOf(header.joinToString(",")) + rows).joinToString("\r\n")
 }
 
-private suspend fun JibetDatabase.withTransactionCompat(block: suspend () -> Unit) =
-    androidx.room.withTransaction(this) { block() }
+private suspend fun JibetDatabase.withTransactionCompat(block: suspend () -> Unit) {
+    withTransaction { block() }
+}
