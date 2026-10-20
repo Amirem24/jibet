@@ -92,7 +92,7 @@ class GoalsViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun update(g: GoalEntity) {
-        viewModelScope.launch { repo.updateGoal(g) }
+        viewModelScope.launch { repo.updateGoal(g.copy(done = g.saved >= g.target)) }
     }
 
     fun delete(g: GoalEntity) {

@@ -336,7 +336,7 @@ fun SettingsScreen(onNavigate: (String) -> Unit, onOpenWizard: () -> Unit) {
         Spacer(Modifier.height(8.dp))
         GlassCard(Modifier.fillMaxWidth()) {
             SettingsRow(
-                "نسخه " + Fmt.fa("1.0.0").replace(".", "٫"),
+                "نسخه " + Fmt.fa("1.0.1").replace(".", "٫"),
                 leading = { LeadBadge(emoji = "ℹ️") },
                 showArrow = false
             )

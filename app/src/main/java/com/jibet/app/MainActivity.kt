@@ -3,6 +3,7 @@ package com.jibet.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -40,12 +42,16 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.jibet.app.data.SetupState
 import com.jibet.app.ui.accounts.AccountsScreen
 import com.jibet.app.ui.add.AddTransactionScreen
 import com.jibet.app.ui.categories.CategoriesScreen
@@ -62,6 +68,7 @@ import com.jibet.app.ui.transactions.TransactionsScreen
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         val app = application as JibetApp
         setContent {
             val themeSetting by app.settings.theme.collectAsState(initial = "system")
@@ -77,13 +84,17 @@ class MainActivity : ComponentActivity() {
                     LocalLayoutDirection provides LayoutDirection.Rtl
                 ) {
                     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        val setupDone by app.settings.setupDone.collectAsState(initial = null)
-                        when (setupDone) {
-                            null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("جیبت", style = MaterialTheme.typography.headlineMedium)
+                        val setupState by app.settings.setupState.collectAsState(initial = SetupState.Loading)
+                        when (setupState) {
+                            SetupState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("جیبت", style = MaterialTheme.typography.headlineMedium)
+                                    Spacer(Modifier.height(16.dp))
+                                    CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
+                                }
                             }
-                            false -> SetupWizard(onFinished = {})
-                            else -> MainScaffold(app)
+                            SetupState.Fresh -> SetupWizard(onFinished = {})
+                            SetupState.Done -> MainScaffold(app)
                         }
                     }
                 }

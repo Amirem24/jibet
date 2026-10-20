@@ -7,8 +7,16 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 
 private val Context.dataStore by preferencesDataStore(name = "jibet_settings")
+
+/** Distinguishes "still reading disk" from "never set up" — they are NOT the same. */
+sealed interface SetupState {
+    data object Loading : SetupState
+    data object Fresh : SetupState
+    data object Done : SetupState
+}
 
 class SettingsRepository(private val context: Context) {
 
@@ -18,8 +26,15 @@ class SettingsRepository(private val context: Context) {
         val CURRENCY = stringPreferencesKey("currency")
     }
 
-    /** null until loaded from disk; false => show setup wizard */
-    val setupDone: Flow<Boolean?> = context.dataStore.data.map { it[Keys.SETUP_DONE] }
+    /**
+     * Emits Loading immediately, then always emits exactly one real state
+     * (Fresh when the key is absent, Done when setup finished before).
+     * DataStore always emits at least emptyPreferences(), so Fresh is guaranteed.
+     */
+    val setupState: Flow<SetupState> = context.dataStore.data
+        .map { if (it[Keys.SETUP_DONE] == true) SetupState.Done else SetupState.Fresh }
+        .onStart { emit(SetupState.Loading) }
+
     val theme: Flow<String> = context.dataStore.data.map { it[Keys.THEME] ?: "system" }
     val currency: Flow<String> = context.dataStore.data.map { it[Keys.CURRENCY] ?: "تومان" }
 

@@ -30,9 +30,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,8 +61,8 @@ import com.jibet.app.util.Fmt
 import com.jibet.app.util.Jalali
 import com.jibet.app.util.Ranges
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -77,15 +75,20 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     val categories = repo.categories.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val accounts = repo.accounts.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    /** income to expense for the current Jalali month */
-    var monthSums by mutableStateOf(0.0 to 0.0)
-        private set
-
-    init {
-        viewModelScope.launch {
-            monthSums = repo.sumsBetween(Ranges.thisMonth().first, Ranges.thisMonth().second)
+    /** income to expense for the current Jalali month — reactive to new transactions */
+    val monthSums = repo.transactions
+        .map { list ->
+            val (from, to) = Ranges.thisMonth()
+            var income = 0.0
+            var expense = 0.0
+            list.forEach { tx ->
+                if (tx.timestamp in from..to) {
+                    if (tx.isIncome) income += tx.amount else expense += tx.amount
+                }
+            }
+            income to expense
         }
-    }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0 to 0.0)
 }
 
 @Composable
@@ -95,6 +98,7 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
     val transactions by vm.transactions.collectAsState()
     val categories by vm.categories.collectAsState()
     val accounts by vm.accounts.collectAsState()
+    val monthSums by vm.monthSums.collectAsState()
     val jc = LocalJibetColors.current
 
     val recent = remember(transactions, categories, accounts) {
@@ -140,14 +144,14 @@ fun HomeScreen(onNavigate: (String) -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     MonthStatChip(
                         label = "درآمد این ماه",
-                        amount = vm.monthSums.first,
+                        amount = monthSums.first,
                         tint = jc.income,
                         icon = Icons.Default.ArrowUpward,
                         modifier = Modifier.weight(1f)
                     )
                     MonthStatChip(
                         label = "هزینه این ماه",
-                        amount = vm.monthSums.second,
+                        amount = monthSums.second,
                         tint = jc.expense,
                         icon = Icons.Default.ArrowDownward,
                         modifier = Modifier.weight(1f)

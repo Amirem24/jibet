@@ -113,7 +113,7 @@ fun StatsScreen(onBack: () -> Unit) {
     val categories by vm.categories.collectAsState()
     val jc = LocalJibetColors.current
 
-    LaunchedEffect(mode) { vm.reload() }
+    LaunchedEffect(mode, transactions) { vm.reload() }
 
     val buckets = remember(transactions, mode) { buildBuckets(transactions, mode) }
 
