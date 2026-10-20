@@ -1,83 +1,80 @@
 package com.jibet.app.data
 
-import androidx.room.*
-import kotlinx.serialization.Serializable
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
-enum class RecurFreq { DAILY, WEEKLY, MONTHLY }
-
-@Serializable
-@Entity(tableName = "categories")
-data class CategoryEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String,
-    val emoji: String,
-    val colorHex: String,
-    val isIncome: Boolean,
-    val isDefault: Boolean = false,
-    val budget: Double = 0.0
-)
-
-@Serializable
-@Entity(tableName = "accounts")
+@Entity(tableName = "accounts", indices = [Index("sortOrder")])
 data class AccountEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val emoji: String,
-    val colorHex: String,
-    val balance: Double = 0.0
+    val kind: AccountKind = AccountKind.CASH,
+    val initialBalance: Double = 0.0,
+    val colorHex: String = "#5B7FFF",
+    val icon: String = "wallet",
+    val isDefault: Boolean = false,
+    val sortOrder: Int = 0,
 )
 
-@Serializable
+@Entity(tableName = "categories", indices = [Index("kind"), Index("sortOrder")])
+data class CategoryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val kind: Kind = Kind.EXPENSE,
+    val colorHex: String = "#8A93A6",
+    val icon: String = "more-horizontal",
+    val isDefault: Boolean = false,
+    val sortOrder: Int = 0,
+)
+
 @Entity(
     tableName = "transactions",
-    indices = [Index("categoryId"), Index("accountId"), Index("timestamp")]
+    indices = [Index("categoryId"), Index("accountId"), Index("date")],
 )
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val amount: Double,
-    val isIncome: Boolean,
-    val categoryId: Long,
-    val accountId: Long,
-    val note: String = "",
-    val timestamp: Long,
-    val recurringId: Long? = null
-)
-
-@Serializable
-@Entity(tableName = "recurring")
-data class RecurringEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val kind: Kind = Kind.EXPENSE,
     val title: String,
-    val amount: Double,
-    val isIncome: Boolean,
-    val categoryId: Long,
+    val note: String? = null,
+    /** epoch millis */
+    val date: Long,
     val accountId: Long,
-    val freq: String,
-    val nextRun: Long,
-    val active: Boolean = true
+    val categoryId: Long,
+    val recurringId: Long? = null,
 )
 
-@Serializable
+@Entity(tableName = "budgets", indices = [Index("categoryId"), Index(value = ["jYear", "jMonth"])])
+data class BudgetEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val categoryId: Long,
+    val jYear: Int,
+    val jMonth: Int,
+    val amount: Double,
+)
+
 @Entity(tableName = "goals")
 data class GoalEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
-    val target: Double,
-    val saved: Double = 0.0,
-    val emoji: String = "🎯",
-    val colorHex: String = "#2A9D8F",
-    val deadline: Long? = null,
-    val done: Boolean = false
+    val targetAmount: Double,
+    val savedAmount: Double = 0.0,
+    /** رشته شمسی «jy/mm/dd» مثل وب — null یعنی بدون مهلت */
+    val deadline: String? = null,
+    val colorHex: String = "#5B7FFF",
+    val icon: String = "plane",
 )
 
-data class CategorySum(val categoryId: Long, val total: Double)
-
-@Serializable
-data class BackupData(
-    val version: Int = 1,
-    val categories: List<CategoryEntity> = emptyList(),
-    val accounts: List<AccountEntity> = emptyList(),
-    val transactions: List<TransactionEntity> = emptyList(),
-    val recurring: List<RecurringEntity> = emptyList(),
-    val goals: List<GoalEntity> = emptyList()
+@Entity(tableName = "recurring", indices = [Index("nextDate")])
+data class RecurringEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val amount: Double,
+    val kind: Kind = Kind.EXPENSE,
+    val accountId: Long,
+    val categoryId: Long,
+    val frequency: Frequency = Frequency.MONTHLY,
+    /** epoch millis سررسید بعدی */
+    val nextDate: Long,
+    val isActive: Boolean = true,
 )

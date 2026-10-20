@@ -1,427 +1,444 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.jibet.app.ui.transactions
 
 import android.app.Application
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jibet.app.JibetApp
-import com.jibet.app.data.AccountEntity
-import com.jibet.app.data.CategoryEntity
-import com.jibet.app.data.TransactionEntity
-import com.jibet.app.ui.components.AmountText
-import com.jibet.app.ui.components.EmojiBadge
+import com.jibet.app.UiBus
+import com.jibet.app.data.AccountRow
+import com.jibet.app.data.Kind
+import com.jibet.app.data.TxPage
+import com.jibet.app.data.TxRow
 import com.jibet.app.ui.components.EmptyState
+import com.jibet.app.ui.components.GlassIconButton
+import com.jibet.app.ui.components.JibetChip
+import com.jibet.app.ui.components.ScreenHeader
+import com.jibet.app.ui.components.TxGroupedList
+import com.jibet.app.ui.components.TxSummaryLine
+import com.jibet.app.ui.components.groupTxsByDay
+import com.jibet.app.ui.components.jibetCard
+import com.jibet.app.ui.components.jibetGlass
+import com.jibet.app.ui.components.parseColor
+import com.jibet.app.ui.components.pressableScale
+import com.jibet.app.ui.theme.Ink
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.util.Defaults
-import com.jibet.app.util.Fmt
-import com.jibet.app.util.Ranges
-import java.time.Instant
-import java.time.ZoneId
-import kotlinx.coroutines.flow.Flow
+import com.jibet.app.ui.theme.TextMid
+import com.jibet.app.ui.theme.Vazir
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-enum class TypeFilter { ALL, EXPENSE, INCOME }
-enum class PeriodFilter { ALL, TODAY, WEEK, MONTH }
+/* ================= ViewModel ================= */
 
-/** One rendered row of the transaction list. */
-data class TxRow(
-    val tx: TransactionEntity,
-    val categoryName: String?,
-    val categoryEmoji: String,
-    val categoryColor: String,
-    val accountName: String
-)
+/** مدل‌ نمایشی صفحه‌ی تراکنش‌ها — پورت ۱:۱ منطق transactions.tsx */
+class TransactionsViewModel(application: Application) : AndroidViewModel(application) {
 
-/**
- * Full transaction history with search + type / period / category / account filters,
- * grouped by local date with sticky headers.
- */
+    private val repo = getApplication<JibetApp>().repository
+
+    /** متن خام جستجو */
+    val qInput = MutableStateFlow("")
+
+    /** جستجوی دیبانس‌شده (۳۵۰ms مثل وب) */
+    private val _q = MutableStateFlow("")
+    val q: StateFlow<String> = _q.asStateFlow()
+
+    /** null = همه */
+    val kind = MutableStateFlow<Kind?>(null)
+
+    /** 0 = همه حساب‌ها */
+    val accountId = MutableStateFlow(0L)
+
+    val offset = MutableStateFlow(0)
+    val loadingMore = MutableStateFlow(false)
+    val loading = MutableStateFlow(true)
+
+    /** آیتم‌های انباشته‌شده — معادل setItems وب */
+    private val _loaded = MutableStateFlow<List<TxRow>>(emptyList())
+    val items: StateFlow<List<TxRow>> = _loaded.asStateFlow()
+
+    val accounts: StateFlow<List<AccountRow>> = repo.watchAccounts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * صفحه‌ی فعلی — با تغییر فیلترها و هر تغییر داده‌ی دیتابیس دوباره منتشر می‌شود
+     * (جریان‌های Room خودکار واکنش‌گرا هستند؛ معادل refetch وب روی تغییر استور)
+     */
+    val page: StateFlow<TxPage> = combine(_q, kind, accountId, offset) { q, k, acc, off ->
+        PageParams(q, k, acc, off)
+    }
+        .flatMapLatest { p ->
+            repo.watchTxPage(
+                q = p.q,
+                kind = p.kind,
+                accountId = p.accountId,
+                categoryId = 0,
+                from = 0,
+                to = 0,
+                limit = PAGE,
+                offset = p.offset,
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TxPage(emptyList(), 0, 0.0, 0.0))
+
+    init {
+        // دیبانس جستجو — ۳۵۰ms بعد از آخرین تایپ
+        viewModelScope.launch {
+            qInput.collectLatest { input ->
+                delay(350)
+                _q.value = input.trim()
+            }
+        }
+        // ریست صفحه روی تغییر فیلترها — مثل setOffset(0) وب
+        viewModelScope.launch {
+            combine(_q, kind, accountId) { _, _, _ -> Unit }
+                .drop(1)
+                .collect {
+                    offset.value = 0
+                    loading.value = true
+                }
+        }
+        // انباشت آیتم‌ها — offset=0 جایگزین لیست، offset>0 افزودن بدون تکرار
+        viewModelScope.launch {
+            page.collect { p ->
+                if (offset.value == 0) {
+                    _loaded.value = p.items
+                } else {
+                    val seen = _loaded.value.mapTo(HashSet()) { it.id }
+                    _loaded.value = _loaded.value + p.items.filter { it.id !in seen }
+                }
+                if (loadingMore.value) loadingMore.value = false
+                loading.value = false
+            }
+        }
+    }
+
+    /** نمایش بیشتر — مثل loadMore وب */
+    fun loadMore() {
+        if (loadingMore.value) return
+        if (_loaded.value.size >= page.value.total) return
+        loadingMore.value = true
+        offset.value += PAGE
+    }
+
+    private data class PageParams(val q: String, val kind: Kind?, val accountId: Long, val offset: Int)
+
+    private companion object {
+        const val PAGE = 50
+    }
+}
+
+/* ================= صفحه ================= */
+
+/** صفحه‌ی تراکنش‌ها: جستجو، فیلتر نوع/حساب، لیست گروه‌بندی روز + نمایش بیشتر */
 @Composable
-fun TransactionsScreen(onBack: () -> Unit, onEditTx: (Long) -> Unit) {
+fun TransactionsScreen(onPush: (String) -> Unit) {
     val vm: TransactionsViewModel = viewModel()
-    val cs = MaterialTheme.colorScheme
     val jc = LocalJibetColors.current
-
-    val query by vm.query.collectAsState()
-    val type by vm.type.collectAsState()
-    val period by vm.period.collectAsState()
-    val categoryId by vm.categoryId.collectAsState()
+    val qInput by vm.qInput.collectAsState()
+    val kind by vm.kind.collectAsState()
     val accountId by vm.accountId.collectAsState()
-    val categories by vm.categories.collectAsState()
     val accounts by vm.accounts.collectAsState()
-    val filtered by vm.filtered.collectAsState()
-    val totalCount by vm.totalCount.collectAsState()
+    val page by vm.page.collectAsState()
+    val items by vm.items.collectAsState()
+    val loading by vm.loading.collectAsState()
+    val loadingMore by vm.loadingMore.collectAsState()
 
-    var showCategoryMenu by remember { mutableStateOf(false) }
-    var showAccountMenu by remember { mutableStateOf(false) }
-
-    // Group filtered transactions by local date (list is already DESC by timestamp).
-    val groups = remember(filtered) {
-        filtered
-            .groupBy { Instant.ofEpochMilli(it.tx.timestamp).atZone(ZoneId.systemDefault()).toLocalDate() }
-            .toList()
-            .sortedByDescending { it.first }
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        // 1. Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
-            }
-            Text("تراکنش‌ها", style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = Fmt.faNum(filtered.size.toLong()) + " مورد",
-                style = MaterialTheme.typography.bodySmall,
-                color = cs.onSurfaceVariant
-            )
-        }
-
-        // 2. Search
-        OutlinedTextField(
-            value = query,
-            onValueChange = { vm.query.value = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 8.dp),
-            shape = RoundedCornerShape(20.dp),
-            singleLine = true,
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            placeholder = { Text("جستجو در یادداشت‌ها…") }
-        )
-
-        // 3. Filter row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = type == TypeFilter.ALL,
-                onClick = { vm.type.value = TypeFilter.ALL },
-                label = { Text("همه") }
-            )
-            FilterChip(
-                selected = type == TypeFilter.EXPENSE,
-                onClick = { vm.type.value = TypeFilter.EXPENSE },
-                label = { Text("هزینه") }
-            )
-            FilterChip(
-                selected = type == TypeFilter.INCOME,
-                onClick = { vm.type.value = TypeFilter.INCOME },
-                label = { Text("درآمد") }
-            )
-            FilterChip(
-                selected = period == PeriodFilter.ALL,
-                onClick = { vm.period.value = PeriodFilter.ALL },
-                label = { Text("همه") }
-            )
-            FilterChip(
-                selected = period == PeriodFilter.TODAY,
-                onClick = { vm.period.value = PeriodFilter.TODAY },
-                label = { Text("امروز") }
-            )
-            FilterChip(
-                selected = period == PeriodFilter.WEEK,
-                onClick = { vm.period.value = PeriodFilter.WEEK },
-                label = { Text("این هفته") }
-            )
-            FilterChip(
-                selected = period == PeriodFilter.MONTH,
-                onClick = { vm.period.value = PeriodFilter.MONTH },
-                label = { Text("این ماه") }
-            )
-            Box {
-                FilterChip(
-                    selected = categoryId != null,
-                    onClick = { showCategoryMenu = true },
-                    label = {
-                        val name = categories.firstOrNull { it.id == categoryId }?.name
-                        Text(if (categoryId != null && name != null) "دسته: " + name else "دسته")
-                    }
-                )
-                DropdownMenu(expanded = showCategoryMenu, onDismissRequest = { showCategoryMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text("بدون فیلتر") },
-                        onClick = {
-                            vm.categoryId.value = null
-                            showCategoryMenu = false
-                        }
-                    )
-                    categories.forEach { c ->
-                        DropdownMenuItem(
-                            text = { Text(c.emoji + " " + c.name) },
-                            onClick = {
-                                vm.categoryId.value = c.id
-                                showCategoryMenu = false
-                            }
-                        )
-                    }
-                }
-            }
-            Box {
-                FilterChip(
-                    selected = accountId != null,
-                    onClick = { showAccountMenu = true },
-                    label = {
-                        val name = accounts.firstOrNull { it.id == accountId }?.name
-                        Text(if (accountId != null && name != null) "حساب: " + name else "حساب")
-                    }
-                )
-                DropdownMenu(expanded = showAccountMenu, onDismissRequest = { showAccountMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text("بدون فیلتر") },
-                        onClick = {
-                            vm.accountId.value = null
-                            showAccountMenu = false
-                        }
-                    )
-                    accounts.forEach { a ->
-                        DropdownMenuItem(
-                            text = { Text(a.emoji + " " + a.name) },
-                            onClick = {
-                                vm.accountId.value = a.id
-                                showAccountMenu = false
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        // 4. Result list
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp)
-        ) {
-            if (totalCount == 0) {
-                item {
-                    EmptyState(
-                        emoji = "🧾",
-                        title = "هنوز تراکنشی ثبت نشده",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 72.dp)
-                    )
-                }
-            } else if (filtered.isEmpty()) {
-                item {
-                    EmptyState(
-                        emoji = "🔍",
-                        title = "تراکنشی پیدا نشد",
-                        subtitle = "فیلترها را تغییر دهید",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 72.dp)
-                    )
-                }
-            } else {
-                groups.forEach { (day, rows) ->
-                    stickyHeader(key = "h" + day.toEpochDay()) {
-                        val net = rows.sumOf { if (it.tx.isIncome) it.tx.amount else -it.tx.amount }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(cs.surface.copy(alpha = 0.92f))
-                                .padding(horizontal = 4.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = Fmt.dayLabel(rows.first().tx.timestamp),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(Modifier.weight(1f))
-                            Text(
-                                text = Fmt.money(net),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (net >= 0) jc.income else jc.expense
-                            )
-                        }
-                    }
-                    items(rows.size, key = { rows[it].tx.id }) { index ->
-                        val row = rows[index]
-                        TxRowItem(row = row, onClick = { onEditTx(row.tx.id) })
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** Soft transaction row: category badge, names, amount. */
-@Composable
-private fun TxRowItem(row: TxRow, onClick: () -> Unit) {
-    val cs = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
     ) {
-        EmojiBadge(emoji = row.categoryEmoji, colorHex = row.categoryColor, size = 44.dp)
-        Spacer(Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = row.categoryName ?: "بدون دسته",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            val subtitle = buildString {
-                append(row.accountName)
-                if (row.tx.note.isNotBlank()) {
-                    append(" • ")
-                    append(row.tx.note)
+        ScreenHeader(
+            title = "تراکنش‌ها",
+            action = {
+                GlassIconButton(onClick = { onPush("search") }) {
+                    Icon(
+                        Icons.Rounded.Tune,
+                        contentDescription = "جستجو و فیلتر",
+                        tint = TextMid,
+                        modifier = Modifier.size(19.dp),
+                    )
                 }
-            }
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = cs.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+            },
+        )
+
+        // نوار جستجو
+        SearchField(
+            value = qInput,
+            onValueChange = { vm.qInput.value = it },
+            placeholder = "جستجو...",
+            a11yLabel = "جستجوی تراکنش",
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+
+        // چیپ‌های نوع
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+                .horizontalScroll(rememberScrollState())
+                .padding(bottom = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            JibetChip(label = "همه", active = kind == null, onClick = { vm.kind.value = null })
+            JibetChip(
+                label = "هزینه",
+                active = kind == Kind.EXPENSE,
+                color = jc.expense,
+                onClick = { vm.kind.value = Kind.EXPENSE },
+            )
+            JibetChip(
+                label = "درآمد",
+                active = kind == Kind.INCOME,
+                color = jc.income,
+                onClick = { vm.kind.value = Kind.INCOME },
             )
         }
-        AmountText(
-            amount = row.tx.amount,
-            isIncome = row.tx.isIncome,
-            style = MaterialTheme.typography.titleSmall
+
+        // چیپ‌های حساب
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
+                .horizontalScroll(rememberScrollState())
+                .padding(bottom = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            JibetChip(label = "همه حساب‌ها", active = accountId == 0L, onClick = { vm.accountId.value = 0L })
+            accounts.forEach { a ->
+                JibetChip(
+                    label = a.name,
+                    active = accountId == a.id,
+                    onClick = { vm.accountId.value = if (vm.accountId.value == a.id) 0L else a.id },
+                    color = parseColor(a.colorHex),
+                )
+            }
+        }
+
+        TxSummaryLine(income = page.income, expense = page.expense, total = page.total)
+
+        // محتوا
+        if (loading && items.isEmpty()) {
+            SkeletonList()
+        } else if (items.isEmpty()) {
+            EmptyState(
+                title = "تراکنشی یافت نشد",
+                description = "با دکمه‌ی + پایین صفحه اولین تراکنش را ثبت کن یا فیلترها را تغییر بده.",
+                icon = Icons.Rounded.AccountBalanceWallet,
+            )
+        } else {
+            // ورود نرم لیست — مثل motion.div وب (opacity 180ms)
+            val fade = remember { Animatable(0f) }
+            LaunchedEffect(Unit) { fade.animateTo(1f, tween(durationMillis = 180)) }
+            Column(Modifier.alpha(fade.value)) {
+                TxGroupedList(
+                    groups = groupTxsByDay(items),
+                    onOpen = { UiBus.openDetail(it.id) },
+                )
+
+                if (page.total > items.size) {
+                    val moreAction: (() -> Unit)? = if (loadingMore) null else ({ vm.loadMore() })
+                    Row(
+                        Modifier
+                            .padding(top = 16.dp)
+                            .fillMaxWidth()
+                            .alpha(if (loadingMore) 0.6f else 1f)
+                            .jibetGlass(shape = RoundedCornerShape(16.dp))
+                            .pressableScale(onClick = moreAction, pressedScale = 0.98f)
+                            .height(44.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (loadingMore) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = TextMid,
+                            )
+                        } else {
+                            Icon(
+                                Icons.Rounded.KeyboardArrowDown,
+                                contentDescription = null,
+                                tint = TextMid,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                        Text(
+                            if (loadingMore) "در حال بارگذاری…" else "نمایش بیشتر",
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = TextMid),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* ================= اجزای محلی ================= */
+
+/** نوار جستجوی شیشه‌ای — مثل input وب (h-11 rounded-full) */
+@Composable
+private fun SearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    a11yLabel: String,
+) {
+    Box(
+        modifier
+            .fillMaxWidth()
+            .jibetGlass(shape = RoundedCornerShape(50))
+            .height(44.dp),
+    ) {
+        Icon(
+            Icons.Rounded.Search,
+            contentDescription = null,
+            tint = Color(0xFFA7AEC0),
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 16.dp)
+                .size(17.dp),
+        )
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = Ink),
+            cursorBrush = SolidColor(Ink),
+            modifier = Modifier
+                .fillMaxSize()
+                .semantics { contentDescription = a11yLabel }
+                .padding(start = 44.dp, end = 16.dp),
+            decorationBox = { inner ->
+                Box(contentAlignment = Alignment.CenterStart) {
+                    if (value.isEmpty()) {
+                        Text(
+                            placeholder,
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = Color(0xFFA7AEC0)),
+                            maxLines = 1,
+                        )
+                    }
+                    inner()
+                }
+            },
         )
     }
 }
 
-/** ViewModel: combines repo flows with active filters into a filtered row list. */
-class TransactionsViewModel(app: Application) : AndroidViewModel(app) {
-
-    private val repo = (app as JibetApp).repository
-
-    val query = MutableStateFlow("")
-    val type = MutableStateFlow(TypeFilter.ALL)
-    val period = MutableStateFlow(PeriodFilter.ALL)
-    val categoryId = MutableStateFlow<Long?>(null)
-    val accountId = MutableStateFlow<Long?>(null)
-
-    val categories: StateFlow<List<CategoryEntity>> = repo.categories.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
+/** مستطیل پالس‌دار اسکلتون */
+@Composable
+private fun PulsingBox(
+    width: Dp,
+    height: Dp,
+    color: Color,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(50),
+) {
+    val transition = rememberInfiniteTransition(label = "pulse")
+    val alpha by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "pulseAlpha",
     )
-    val accounts: StateFlow<List<AccountEntity>> = repo.accounts.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
+    Box(
+        modifier
+            .alpha(alpha)
+            .background(color, shape)
+            .width(width)
+            .height(height),
     )
+}
 
-    val totalCount: StateFlow<Int> = repo.transactions
-        .map { it.size }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-
-    private data class Filters(
-        val query: String,
-        val type: TypeFilter,
-        val period: PeriodFilter,
-        val categoryId: Long?,
-        val accountId: Long?
-    )
-
-    private val filters: Flow<Filters> = combine(query, type, period, categoryId, accountId) { q, t, p, c, a ->
-        Filters(q, t, p, c, a)
-    }
-
-    val filtered: StateFlow<List<TxRow>> = combine(
-        repo.transactions, repo.categories, repo.accounts, filters
-    ) { txs, cats, accs, f ->
-        val catById = cats.associateBy { it.id }
-        val accById = accs.associateBy { it.id }
-        val range: Pair<Long, Long>? = when (f.period) {
-            PeriodFilter.ALL -> null
-            PeriodFilter.TODAY -> Ranges.today()
-            PeriodFilter.WEEK -> Ranges.thisWeek()
-            PeriodFilter.MONTH -> Ranges.thisMonth()
-        }
-        val from = range?.first ?: 0L
-        val to = range?.second ?: Long.MAX_VALUE
-        val q = f.query.trim()
-        txs.filter { tx ->
-            val cat = catById[tx.categoryId]
-            val acc = accById[tx.accountId]
-            val typeOk = when (f.type) {
-                TypeFilter.ALL -> true
-                TypeFilter.EXPENSE -> !tx.isIncome
-                TypeFilter.INCOME -> tx.isIncome
+/** اسکلتون بارگذاری اولیه — مثل SkeletonList وب (۵ ردیف) */
+@Composable
+private fun SkeletonList() {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        repeat(5) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .jibetCard()
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                PulsingBox(width = 40.dp, height = 40.dp, color = Color(0xFFE4E8F4), shape = CircleShape)
+                Column(
+                    Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    PulsingBox(width = 112.dp, height = 12.dp, color = Color(0xFFE4E8F4))
+                    PulsingBox(width = 64.dp, height = 10.dp, color = Color(0xFFECEFF7))
+                }
+                PulsingBox(width = 64.dp, height = 12.dp, color = Color(0xFFE4E8F4))
             }
-            val periodOk = tx.timestamp in from..to
-            val categoryOk = f.categoryId == null || tx.categoryId == f.categoryId
-            val accountOk = f.accountId == null || tx.accountId == f.accountId
-            val queryOk = q.isEmpty() ||
-                tx.note.contains(q, ignoreCase = true) ||
-                (cat?.name ?: "").contains(q, ignoreCase = true) ||
-                (acc?.name ?: "").contains(q, ignoreCase = true)
-            typeOk && periodOk && categoryOk && accountOk && queryOk
-        }.map { tx ->
-            val cat = catById[tx.categoryId]
-            val acc = accById[tx.accountId]
-            TxRow(
-                tx = tx,
-                categoryName = cat?.name,
-                categoryEmoji = cat?.emoji ?: "🧾",
-                categoryColor = cat?.colorHex ?: Defaults.palette.first(),
-                accountName = acc?.name ?: "—"
-            )
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
 }

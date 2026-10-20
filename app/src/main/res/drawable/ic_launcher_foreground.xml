@@ -4,22 +4,32 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- coin -->
-    <path
-        android:fillColor="#E9C46A"
-        android:pathData="M46,34 m-8,0 a8,8 0 1 1 16,0 a8,8 0 1 1 -16,0" />
-    <path
-        android:fillColor="#2A9D8F"
-        android:pathData="M46,34 m-4.5,0 a4.5,4.5 0 1 1 9,0 a4.5,4.5 0 1 1 -9,0" />
-    <!-- wallet body -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M36,44 h34 a5,5 0 0 1 5,5 v18 a5,5 0 0 1 -5,5 h-34 a5,5 0 0 1 -5,-5 v-18 a5,5 0 0 1 5,-5 z" />
-    <!-- wallet pocket -->
-    <path
-        android:fillColor="#EAF6F4"
-        android:pathData="M60,50 h15 v10 h-15 a5,5 0 0 1 0,-10 z" />
-    <path
-        android:fillColor="#2A9D8F"
-        android:pathData="M66,52.5 m-2.5,0 a2.5,2.5 0 1 1 5,0 a2.5,2.5 0 1 1 -5,0" />
+    <!-- کیف پول جیبت — هم‌طرح لوگوی نسخه وب (lucide wallet) -->
+    <group
+        android:scaleX="0.44"
+        android:scaleY="0.44"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:pathData="M97,54V33.5H25.5C21.4,33.5 18,30.1 18,26C18,21.9 21.4,18.5 25.5,18.5H97V33.5"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="8.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000" />
+        <path
+            android:pathData="M14,26V82C14,86.4 17.6,90 22,90H94V67"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="8.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000" />
+        <path
+            android:pathData="M81,54C78.8,54 77,55.8 77,58C77,60.2 78.8,62 81,62H97V54H81Z"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="8.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000" />
+    </group>
 </vector>

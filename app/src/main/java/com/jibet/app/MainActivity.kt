@@ -4,65 +4,80 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.outlined.BarChart
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Receipt
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.navigation.NavType
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import com.jibet.app.data.SetupState
+import com.jibet.app.data.BootState
+import com.jibet.app.ui.about.AboutScreen
 import com.jibet.app.ui.accounts.AccountsScreen
-import com.jibet.app.ui.add.AddTransactionScreen
+import com.jibet.app.ui.backup.BackupScreen
+import com.jibet.app.ui.budget.BudgetScreen
 import com.jibet.app.ui.categories.CategoriesScreen
-import com.jibet.app.ui.components.LocalCurrency
+import com.jibet.app.ui.components.JibetLogo
+import com.jibet.app.ui.components.accentGradient
+import com.jibet.app.ui.components.jibetBackdrop
 import com.jibet.app.ui.goals.GoalsScreen
 import com.jibet.app.ui.home.HomeScreen
+import com.jibet.app.ui.more.MoreScreen
+import com.jibet.app.ui.nav.JibetBottomNav
+import com.jibet.app.ui.onboarding.OnboardingScreen
 import com.jibet.app.ui.recurring.RecurringScreen
-import com.jibet.app.ui.settings.SettingsScreen
-import com.jibet.app.ui.setup.SetupWizard
-import com.jibet.app.ui.stats.StatsScreen
+import com.jibet.app.ui.reports.ReportsScreen
+import com.jibet.app.ui.search.SearchScreen
+import com.jibet.app.ui.sheets.AddTransactionSheet
+import com.jibet.app.ui.sheets.TransactionDetailSheet
+import com.jibet.app.ui.theme.Ink
+import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.JibetTheme
+import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.ui.transactions.TransactionsScreen
 
 class MainActivity : ComponentActivity() {
@@ -71,30 +86,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val app = application as JibetApp
         setContent {
-            val themeSetting by app.settings.theme.collectAsState(initial = "system")
-            val dark = when (themeSetting) {
-                "dark" -> true
-                "light" -> false
-                else -> isSystemInDarkTheme()
-            }
-            JibetTheme(darkTheme = dark) {
-                val currency by app.settings.currency.collectAsState(initial = "تومان")
-                CompositionLocalProvider(
-                    LocalCurrency provides currency,
-                    LocalLayoutDirection provides LayoutDirection.Rtl
-                ) {
-                    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        val setupState by app.settings.setupState.collectAsState(initial = SetupState.Loading)
-                        when (setupState) {
-                            SetupState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("جیبت", style = MaterialTheme.typography.headlineMedium)
-                                    Spacer(Modifier.height(16.dp))
-                                    CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
-                                }
-                            }
-                            SetupState.Fresh -> SetupWizard(onFinished = {})
-                            SetupState.Done -> MainScaffold(app)
+            val accent by app.settings.accent.collectAsState(initial = "blue")
+            JibetTheme(accentKey = accent) {
+                Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
+                    val boot by app.settings.bootState.collectAsState(initial = BootState.Loading)
+                    Box(Modifier.fillMaxSize().jibetBackdrop()) {
+                        when (boot) {
+                            BootState.Loading -> Splash()
+                            BootState.Fresh -> OnboardingScreen()
+                            BootState.Done -> MainApp(app)
                         }
                     }
                 }
@@ -103,152 +103,151 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/** اسپلش شروع — مثل Splash وب */
 @Composable
-private fun MainScaffold(app: JibetApp) {
-    // Generate transactions for due recurring items on each app start.
-    LaunchedEffect(Unit) { app.repository.processDueRecurring() }
-
-    val nav = rememberNavController()
-    val backStack by nav.currentBackStackEntryAsState()
-    val route = backStack?.destination?.route ?: "home"
-    val showBar = route in setOf("home", "txs", "stats", "settings")
-
-    Scaffold(
-        containerColor = Color.Transparent,
-        bottomBar = {
-            if (showBar) {
-                JibetBottomBar(current = route) { dest ->
-                    if (dest == "add") {
-                        nav.navigate("add")
-                    } else {
-                        nav.navigate(dest) {
-                            popUpTo("home") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                }
-            }
-        }
-    ) { pad ->
-        JibetBackdrop(Modifier.fillMaxSize().padding(pad)) {
-            NavHost(navController = nav, startDestination = "home") {
-                composable("home") {
-                    HomeScreen(onNavigate = { dest -> nav.navigate(dest) })
-                }
-                composable("txs") {
-                    TransactionsScreen(
-                        onBack = { nav.popBackStack() },
-                        onEditTx = { id -> nav.navigate("add?txId=$id") }
-                    )
-                }
-                composable(
-                    route = "add?txId={txId}",
-                    arguments = listOf(navArgument("txId") {
-                        type = NavType.LongType
-                        defaultValue = -1L
-                    })
-                ) { entry ->
-                    AddTransactionScreen(
-                        txId = entry.arguments?.getLong("txId") ?: -1L,
-                        onDone = { nav.popBackStack() }
-                    )
-                }
-                composable("stats") {
-                    StatsScreen(onBack = { nav.popBackStack() })
-                }
-                composable("settings") {
-                    SettingsScreen(
-                        onNavigate = { dest -> nav.navigate(dest) },
-                        onOpenWizard = { nav.navigate("wizard") }
-                    )
-                }
-                composable("categories") { CategoriesScreen(onBack = { nav.popBackStack() }) }
-                composable("accounts") { AccountsScreen(onBack = { nav.popBackStack() }) }
-                composable("goals") { GoalsScreen(onBack = { nav.popBackStack() }) }
-                composable("recurring") { RecurringScreen(onBack = { nav.popBackStack() }) }
-                composable("wizard") { SetupWizard(onFinished = { nav.popBackStack() }) }
-            }
-        }
-    }
-}
-
-/** Soft colorful blobs behind glassy UI. */
-@Composable
-private fun JibetBackdrop(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
-    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val tealAlpha = if (dark) 0.22f else 0.16f
-    val amberAlpha = if (dark) 0.14f else 0.20f
-    Box(modifier.background(MaterialTheme.colorScheme.background)) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .offset(x = (-70).dp, y = (-110).dp)
-                .background(
-                    Brush.radialGradient(
-                        listOf(Color(0xFF2A9D8F).copy(alpha = tealAlpha), Color.Transparent)
-                    )
-                )
-        )
-        Box(
-            Modifier
-                .size(280.dp)
-                .align(Alignment.BottomStart)
-                .offset(x = (-90).dp, y = 60.dp)
-                .background(
-                    Brush.radialGradient(
-                        listOf(Color(0xFF84A98C).copy(alpha = amberAlpha), Color.Transparent)
-                    )
-                )
-        )
-        Box(
-            Modifier
-                .size(260.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = 70.dp, y = 180.dp)
-                .background(
-                    Brush.radialGradient(
-                        listOf(Color(0xFFE9C46A).copy(alpha = amberAlpha), Color.Transparent)
-                    )
-                )
-        )
-        content()
-    }
-}
-
-@Composable
-private fun JibetBottomBar(current: String, onSelect: (String) -> Unit) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
-        tonalElevation = 0.dp
+private fun Splash() {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .systemBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        val items = listOf(
-            Triple("home", "خانه", Icons.Outlined.Home),
-            Triple("txs", "تراکنش‌ها", Icons.Outlined.Receipt),
-            Triple("add", "افزودن", Icons.Default.AddCircle),
-            Triple("stats", "نمودار", Icons.Outlined.BarChart),
-            Triple("settings", "تنظیمات", Icons.Outlined.Settings)
+        val logoScale = remember { Animatable(0.85f) }
+        LaunchedEffect(Unit) {
+            logoScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+        }
+        Box(Modifier.scale(logoScale.value)) { JibetLogo(size = 86.dp) }
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "جیبت",
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 30.sp, color = Ink),
         )
-        items.forEach { (dest, label, icon) ->
-            val selected = current == dest
-            NavigationBarItem(
-                selected = selected,
-                onClick = { onSelect(dest) },
-                icon = {
-                    if (dest == "add") {
-                        Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp))
-                    } else {
-                        Icon(icon, contentDescription = label)
-                    }
-                },
-                label = { Text(label, style = MaterialTheme.typography.labelMedium) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                )
+        Text(
+            "jibet",
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = InkSoft, letterSpacing = 0.2.em),
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        Spacer(Modifier.height(24.dp))
+        val transition = rememberInfiniteTransition(label = "bar")
+        val x by transition.animateFloat(
+            initialValue = -1.5f,
+            targetValue = 3.5f,
+            animationSpec = infiniteRepeatable(tween(1100, easing = LinearEasing), RepeatMode.Restart),
+            label = "sweep",
+        )
+        Box(
+            Modifier
+                .width(160.dp)
+                .height(6.dp)
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFD8DEF0))
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth(1f / 3f)
+                    .height(6.dp)
+                    .offset(x = 160.dp * x)
+                    .clip(RoundedCornerShape(50))
+                    .background(accentGradient(horizontal = true))
             )
         }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "در حال آماده‌سازی…",
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+        )
+    }
+}
+
+@Composable
+private fun MainApp(app: JibetApp) {
+    val nav = rememberNavController()
+    val backStack by nav.currentBackStackEntryAsState()
+    val current = backStack?.destination?.route ?: "home"
+
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
+            // مثل main.px-4.pb-32 وب — پدینگ افقی و فضا برای نویگیشن شناور
+            Box(Modifier.weight(1f).padding(horizontal = 16.dp).padding(bottom = 132.dp)) {
+                AppNavHost(nav)
+            }
+        }
+        // نویگیشن پایین — شناور روی همه‌ی صفحات
+        JibetBottomNav(
+            current = current,
+            onTab = { tab ->
+                nav.navigate(tab) {
+                    popUpTo("home") { inclusive = tab == "home"; saveState = false }
+                    launchSingleTop = true
+                    restoreState = false
+                }
+            },
+            onAdd = { UiBus.openAdd() },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+        AddTransactionSheet()
+        TransactionDetailSheet()
+    }
+}
+
+@Composable
+private fun AppNavHost(nav: NavHostController) {
+    NavHost(
+        navController = nav,
+        startDestination = "home",
+        modifier = Modifier.fillMaxSize(),
+        enterTransition = {
+            fadeIn(tween(180)) + slideInHorizontally(tween(200)) { -it / 20 }
+        },
+        exitTransition = {
+            fadeOut(tween(150)) + slideOutHorizontally(tween(180)) { it / 20 }
+        },
+        popEnterTransition = {
+            fadeIn(tween(180)) + slideInHorizontally(tween(200)) { it / 20 }
+        },
+        popExitTransition = {
+            fadeOut(tween(150)) + slideOutHorizontally(tween(180)) { -it / 20 }
+        },
+    ) {
+        composable("home") {
+            HomeScreen(
+                onPush = { r -> nav.navigate(r) { launchSingleTop = true } },
+                onTab = { r ->
+                    nav.navigate(r) {
+                        popUpTo("home") { inclusive = r == "home" }
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+        composable("transactions") {
+            TransactionsScreen(onPush = { r -> nav.navigate(r) { launchSingleTop = true } })
+        }
+        composable("search") { SearchScreen(onBack = { nav.popBackStack() }) }
+        composable("reports") { ReportsScreen(onBack = { nav.popBackStack() }) }
+        composable("budget") { BudgetScreen() }
+        composable("more") {
+            MoreScreen(
+                onPush = { r -> nav.navigate(r) { launchSingleTop = true } },
+                onTab = { r ->
+                    nav.navigate(r) {
+                        popUpTo("home") { inclusive = r == "home" }
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+        composable("accounts") { AccountsScreen(onBack = { nav.popBackStack() }) }
+        composable("categories") { CategoriesScreen(onBack = { nav.popBackStack() }) }
+        composable("recurring") { RecurringScreen(onBack = { nav.popBackStack() }) }
+        composable("goals") { GoalsScreen(onBack = { nav.popBackStack() }) }
+        composable("backup") { BackupScreen(onBack = { nav.popBackStack() }) }
+        composable("about") { AboutScreen(onBack = { nav.popBackStack() }) }
     }
 }

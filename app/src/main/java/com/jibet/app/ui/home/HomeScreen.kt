@@ -1,398 +1,776 @@
 package com.jibet.app.ui.home
 
 import android.app.Application
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.ChevronLeft
+import androidx.compose.material.icons.rounded.GpsFixed
+import androidx.compose.material.icons.rounded.PieChart
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import com.jibet.app.JibetApp
-import com.jibet.app.data.AccountEntity
-import com.jibet.app.data.CategoryEntity
-import com.jibet.app.data.TransactionEntity
+import com.jibet.app.UiBus
+import com.jibet.app.data.AccountRow
+import com.jibet.app.data.Kind
+import com.jibet.app.data.Summary
+import com.jibet.app.data.TxRow
 import com.jibet.app.ui.components.AmountText
-import com.jibet.app.ui.components.EmojiBadge
 import com.jibet.app.ui.components.EmptyState
-import com.jibet.app.ui.components.GlassCard
-import com.jibet.app.ui.components.LocalCurrency
-import com.jibet.app.ui.components.SectionTitle
+import com.jibet.app.ui.components.GlassIconButton
+import com.jibet.app.ui.components.IconBubble
+import com.jibet.app.ui.components.accentGradient
+import com.jibet.app.ui.components.jibetCard
+import com.jibet.app.ui.components.jibetGlass
+import com.jibet.app.ui.components.parseColor
+import com.jibet.app.ui.components.pressableScale
+import com.jibet.app.ui.theme.Divider
+import com.jibet.app.ui.theme.ExpenseSoft
+import com.jibet.app.ui.theme.Faint
+import com.jibet.app.ui.theme.IncomeSoft
+import com.jibet.app.ui.theme.Ink
+import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
+import com.jibet.app.ui.theme.TextMid
+import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
-import com.jibet.app.util.Jalali
-import com.jibet.app.util.Ranges
+import com.jibet.app.util.JDate
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 
-class HomeViewModel(app: Application) : AndroidViewModel(app) {
-    private val repo = (app as JibetApp).repository
+/** ویومدل خانه — جریان‌های مخزن با مقادیر اولیه مثل قرارداد */
+class HomeViewModel(application: Application) : AndroidViewModel(application) {
+    private val repo = (application as JibetApp).repository
 
-    val totalBalance = repo.totalBalance.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
-    val transactions = repo.transactions.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    val categories = repo.categories.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    val accounts = repo.accounts.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val accounts: StateFlow<List<AccountRow>> = repo.watchAccounts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** income to expense for the current Jalali month — reactive to new transactions */
-    val monthSums = repo.transactions
-        .map { list ->
-            val (from, to) = Ranges.thisMonth()
-            var income = 0.0
-            var expense = 0.0
-            list.forEach { tx ->
-                if (tx.timestamp in from..to) {
-                    if (tx.isIncome) income += tx.amount else expense += tx.amount
-                }
-            }
-            income to expense
+    val totalBalance: StateFlow<Double> = repo.watchTotalBalance()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
+
+    val summary: StateFlow<Summary> = repo.watchSummary()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Summary(0.0, 0.0, 0.0, 0.0))
+
+    /** آخرین تراکنش‌ها — null تا نخستین انتشار (اسکلتون بارگذاری) */
+    val recentTx: StateFlow<List<TxRow>?> = repo.watchTxPage(
+        q = "",
+        kind = null,
+        accountId = 0L,
+        categoryId = 0L,
+        from = 0L,
+        to = 0L,
+        limit = 6,
+        offset = 0,
+    )
+        .map { it.items }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+}
+
+/** ورود نرم هر بخش — مثل FadeIn وب (opacity + y، ۲۲۰ms easeOut) با حفظ فضا در لی‌اوت */
+@Composable
+private fun FadeIn(delayMs: Int, modifier: Modifier = Modifier, offsetY: Dp = 10.dp, content: @Composable () -> Unit) {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(delayMs.toLong())
+        progress.animateTo(1f, tween(durationMillis = 220, easing = LinearOutSlowInEasing))
+    }
+    Box(
+        modifier.graphicsLayer {
+            alpha = progress.value
+            translationY = offsetY.toPx() * (1f - progress.value)
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0 to 0.0)
+    ) { content() }
+}
+
+/** عدد موجودی با شمارش نرم ۵۵۰ms — مثل CountUpMoney وب */
+@Composable
+private fun CountUpMoney(value: Double, modifier: Modifier = Modifier) {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(value) {
+        if (value != 0.0) {
+            progress.snapTo(0f)
+            progress.animateTo(1f, tween(durationMillis = 550, easing = LinearOutSlowInEasing))
+        }
+    }
+    Text(
+        Fmt.money(value * progress.value),
+        style = TextStyle(
+            fontFamily = Vazir,
+            fontWeight = FontWeight.Black,
+            fontSize = 34.sp,
+            color = Color.White,
+            fontFeatureSettings = "tnum",
+        ),
+        modifier = modifier,
+    )
 }
 
 @Composable
-fun HomeScreen(onNavigate: (String) -> Unit) {
+fun HomeScreen(onPush: (String) -> Unit, onTab: (String) -> Unit) {
     val vm: HomeViewModel = viewModel()
-    val totalBalance by vm.totalBalance.collectAsState()
-    val transactions by vm.transactions.collectAsState()
-    val categories by vm.categories.collectAsState()
     val accounts by vm.accounts.collectAsState()
-    val monthSums by vm.monthSums.collectAsState()
-    val jc = LocalJibetColors.current
+    val totalBalance by vm.totalBalance.collectAsState()
+    val summary by vm.summary.collectAsState()
+    val recent by vm.recentTx.collectAsState()
 
-    val recent = remember(transactions, categories, accounts) {
-        transactions.take(6).mapNotNull { tx ->
-            val acc = accounts.firstOrNull { it.id == tx.accountId } ?: return@mapNotNull null
-            val cat = categories.firstOrNull { it.id == tx.categoryId }
-            Triple(tx, cat, acc)
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Header(onTab = onTab, onPush = onPush)
+
+        FadeIn(0) { BalanceCard(totalBalance = totalBalance) }
+
+        if (accounts.isNotEmpty()) {
+            FadeIn(40) { AccountsCard(accounts = accounts, onOpen = { onPush("accounts") }) }
+        }
+
+        FadeIn(80) { TodayCard(summary = summary) }
+
+        FadeIn(120) { QuickActions(onTab = onTab, onPush = onPush) }
+
+        FadeIn(160) { RecentCard(recent = recent, onTab = onTab) }
+    }
+}
+
+/* ================= هدر ================= */
+
+@Composable
+private fun Header(onTab: (String) -> Unit, onPush: (String) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 20.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column {
+            Text(
+                "جیبت",
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, lineHeight = 32.sp, color = Ink),
+            )
+            Text(
+                "خلاصه‌ی امروز",
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            GlassIconButton(onClick = { onTab("transactions") }) {
+                Icon(
+                    Icons.Rounded.Search,
+                    contentDescription = "جستجو",
+                    tint = TextMid,
+                    modifier = Modifier.size(19.dp),
+                )
+            }
+            GlassIconButton(onClick = { onPush("reports") }) {
+                Icon(
+                    Icons.Rounded.BarChart,
+                    contentDescription = "گزارش‌ها",
+                    tint = TextMid,
+                    modifier = Modifier.size(19.dp),
+                )
+            }
         }
     }
+}
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+/* ================= موجودی کل ================= */
+
+@Composable
+private fun BalanceCard(totalBalance: Double) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 20.dp,
+                shape = RoundedCornerShape(26.dp),
+                spotColor = Color(0x8C5B74E9),
+                ambientColor = Color.Transparent,
+            )
+            .clip(RoundedCornerShape(26.dp))
+            .background(accentGradient())
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0.08f))
+                ),
+                RoundedCornerShape(26.dp),
+            )
+            .padding(20.dp),
     ) {
-        item {
-            val p = remember { Jalali.parts(System.currentTimeMillis()) }
-            Column {
+        // حباب‌های نور تزئینی — مثل blur-2xl وب
+        Box(
+            Modifier
+                .align(Alignment.AbsoluteAlignment.TopLeft)
+                .absoluteOffset(x = (-40).dp, y = (-56).dp)
+                .size(160.dp)
+                .blur(30.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.15f)),
+        )
+        Box(
+            Modifier
+                .align(Alignment.AbsoluteAlignment.BottomRight)
+                .absoluteOffset(x = 24.dp, y = 64.dp)
+                .size(176.dp)
+                .blur(30.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.10f)),
+        )
+
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
                 Text(
-                    text = "سلام 👋",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "موجودی کل",
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = Color.White.copy(alpha = 0.85f)),
                 )
-                Text(text = "جیبت", style = MaterialTheme.typography.headlineLarge)
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = Fmt.faNum(p[0].toLong()) + " " + Fmt.MONTHS[p[1] - 1],
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        item {
-            GlassCard(corner = 28.dp) {
-                Text(
-                    text = "موجودی کل",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(6.dp))
-                AmountText(amount = totalBalance, style = MaterialTheme.typography.displaySmall)
-                Spacer(Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MonthStatChip(
-                        label = "درآمد این ماه",
-                        amount = monthSums.first,
-                        tint = jc.income,
-                        icon = Icons.Default.ArrowUpward,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MonthStatChip(
-                        label = "هزینه این ماه",
-                        amount = monthSums.second,
-                        tint = jc.expense,
-                        icon = Icons.Default.ArrowDownward,
-                        modifier = Modifier.weight(1f)
+                Row(Modifier.padding(top = 10.dp)) {
+                    CountUpMoney(value = totalBalance, modifier = Modifier.alignByBaseline())
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "تومان",
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White.copy(alpha = 0.85f)),
+                        modifier = Modifier.alignByBaseline(),
                     )
                 }
-                TextButton(onClick = { onNavigate("stats") }) {
-                    Text("نمودار جزئیات ←")
-                }
+            }
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .border(
+                        1.dp,
+                        Brush.verticalGradient(
+                            listOf(Color.White.copy(alpha = 0.4f), Color.White.copy(alpha = 0.1f))
+                        ),
+                        RoundedCornerShape(16.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.AccountBalanceWallet,
+                    contentDescription = "کیف پول",
+                    tint = Color.White,
+                    modifier = Modifier.size(21.dp),
+                )
             }
         }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                QuickAction("➕", "ثبت", Modifier.weight(1f)) { onNavigate("add") }
-                QuickAction("🎯", "اهداف", Modifier.weight(1f)) { onNavigate("goals") }
-                QuickAction("💳", "حساب‌ها", Modifier.weight(1f)) { onNavigate("accounts") }
-                QuickAction("🗂", "دسته‌ها", Modifier.weight(1f)) { onNavigate("categories") }
-            }
+    }
+}
+
+/* ================= حساب‌ها ================= */
+
+@Composable
+private fun AccountsCard(accounts: List<AccountRow>, onOpen: () -> Unit) {
+    Column(Modifier.jibetCard().padding(8.dp)) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .pressableScale(onClick = onOpen)
+                .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                "حساب‌ها",
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+            )
+            Icon(
+                Icons.Rounded.ChevronLeft,
+                contentDescription = null,
+                tint = Faint,
+                modifier = Modifier.size(17.dp),
+            )
         }
-        item {
-            Column {
-                SectionTitle("۷ روز اخیر")
-                Spacer(Modifier.height(10.dp))
-                GlassCard {
-                    WeekExpenseChart(transactions)
-                }
+        accounts.forEachIndexed { index, a ->
+            if (index > 0) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Divider)
+                )
             }
-        }
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SectionTitle("تراکنش‌های اخیر")
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = { onNavigate("txs") }) { Text("همه ←") }
-            }
-        }
-        item {
-            Crossfade(
-                targetState = recent.isEmpty(),
-                animationSpec = tween(300),
-                label = "recentState"
-            ) { empty ->
-                if (empty) {
-                    EmptyState(
-                        emoji = "🧾",
-                        title = "هنوز تراکنشی ثبت نشده",
-                        subtitle = "برای شروع، دکمه افزودن را بزنید"
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .pressableScale(onClick = onOpen)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                IconBubble(icon = a.icon, color = parseColor(a.colorHex))
+                Text(
+                    a.name,
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        Fmt.money(a.balance),
+                        style = TextStyle(
+                            fontFamily = Vazir,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = Ink,
+                            fontFeatureSettings = "tnum",
+                        ),
                     )
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        recent.forEach { (tx, cat, acc) ->
-                            RecentTxRow(tx = tx, cat = cat, acc = acc, onOpen = { onNavigate("txs") })
-                        }
-                    }
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "تومان",
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = InkSoft),
+                    )
                 }
             }
         }
-        item {
-            TextButton(onClick = { onNavigate("recurring") }, modifier = Modifier.fillMaxWidth()) {
-                Text("🔁 دوره‌ای", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/* ================= امروز ================= */
+
+@Composable
+private fun TodayCard(summary: Summary) {
+    Column(Modifier.jibetCard().padding(16.dp)) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                "امروز",
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+            )
+            Text(
+                Fmt.faDigits(JDate.formatJalaliDate(System.currentTimeMillis(), JDate.Style.SHORT)),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = Faint),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DayStat(kind = Kind.EXPENSE, amount = summary.todayExpense, modifier = Modifier.weight(1f))
+            DayStat(kind = Kind.INCOME, amount = summary.todayIncome, modifier = Modifier.weight(1f))
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+                .height(1.dp)
+                .background(Color(0xFFEEF1F8)),
+        )
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                "این ماه",
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                MonthStat(amount = summary.monthIncome, isIncome = true)
+                MonthStat(amount = summary.monthExpense, isIncome = false)
             }
         }
     }
 }
 
 @Composable
-private fun MonthStatChip(
-    label: String,
-    amount: Double,
-    tint: Color,
-    icon: ImageVector,
-    modifier: Modifier = Modifier
-) {
-    Surface(shape = RoundedCornerShape(16.dp), color = tint.copy(alpha = 0.10f), modifier = modifier) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+private fun DayStat(kind: Kind, amount: Double, modifier: Modifier = Modifier) {
+    val jc = LocalJibetColors.current
+    val isIncome = kind == Kind.INCOME
+    val color = if (isIncome) jc.income else jc.expense
+    val soft = if (isIncome) IncomeSoft else ExpenseSoft
+    Row(
+        modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(soft),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
-                imageVector = icon,
+                if (isIncome) Icons.Rounded.Add else Icons.Rounded.Remove,
                 contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(16.dp)
+                tint = color,
+                modifier = Modifier.size(16.dp),
             )
-            Column {
+        }
+        Column {
+            Text(
+                if (isIncome) "درآمد" else "هزینه",
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = InkSoft),
+            )
+            Row(Modifier.padding(top = 2.dp)) {
                 Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Fmt.money(amount),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = color),
+                    maxLines = 1,
+                    modifier = Modifier.alignByBaseline(),
                 )
-                AmountText(
-                    amount = amount,
-                    withCurrency = false,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = tint
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    "تومان",
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = InkSoft),
+                    modifier = Modifier.alignByBaseline(),
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun MonthStat(amount: Double, isIncome: Boolean) {
+    val jc = LocalJibetColors.current
+    val color = if (isIncome) jc.income else jc.expense
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Icon(
+            if (isIncome) Icons.Rounded.Add else Icons.Rounded.Remove,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(11.dp),
+        )
+        Text(
+            Fmt.money(amount),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = color),
+        )
+    }
+}
+
+/* ================= اکشن‌های سریع ================= */
+
+@Composable
+private fun QuickActions(onTab: (String) -> Unit, onPush: (String) -> Unit) {
+    val jc = LocalJibetColors.current
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        QuickAction(
+            label = "هزینه",
+            icon = Icons.Rounded.Remove,
+            color = jc.expense,
+            bg = ExpenseSoft,
+            onTap = { UiBus.openAdd(Kind.EXPENSE) },
+            modifier = Modifier.weight(1f),
+        )
+        QuickAction(
+            label = "درآمد",
+            icon = Icons.Rounded.Add,
+            color = jc.income,
+            bg = IncomeSoft,
+            onTap = { UiBus.openAdd(Kind.INCOME) },
+            modifier = Modifier.weight(1f),
+        )
+        QuickAction(
+            label = "بودجه",
+            icon = Icons.Rounded.PieChart,
+            color = jc.accentA,
+            bg = jc.accentA.copy(alpha = 0.12f),
+            onTap = { onTab("budget") },
+            modifier = Modifier.weight(1f),
+        )
+        QuickAction(
+            label = "هدف‌ها",
+            icon = Icons.Rounded.GpsFixed,
+            color = jc.accentB,
+            bg = jc.accentB.copy(alpha = 0.13f),
+            onTap = { onPush("goals") },
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
 @Composable
 private fun QuickAction(
-    emoji: String,
     label: String,
+    icon: ImageVector,
+    color: Color,
+    bg: Color,
+    onTap: () -> Unit,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
-        modifier = modifier
+    Column(
+        modifier
+            .jibetGlass(shape = RoundedCornerShape(20.dp))
+            .pressableScale(onClick = onTap, pressedScale = 0.94f)
+            .height(56.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .background(bg),
+            contentAlignment = Alignment.Center,
         ) {
-            Text(text = emoji, fontSize = 22.sp)
-            Spacer(Modifier.height(6.dp))
-            Text(text = label, style = MaterialTheme.typography.labelMedium)
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = color,
+                modifier = Modifier.size(14.dp),
+            )
         }
+        Text(
+            label,
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = color),
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }
 
-/** Mini bar chart of daily expenses over the last 7 days (RTL flow: today on the left). */
+/* ================= آخرین تراکنش‌ها ================= */
+
 @Composable
-private fun WeekExpenseChart(transactions: List<TransactionEntity>) {
+private fun RecentCard(recent: List<TxRow>?, onTab: (String) -> Unit) {
     val jc = LocalJibetColors.current
-    val days = remember(transactions) {
-        val dates = Ranges.lastNDates(7)
-        val sums = HashMap<LocalDate, Double>()
-        dates.forEach { sums[it] = 0.0 }
-        transactions.forEach { tx ->
-            if (!tx.isIncome) {
-                val d = Instant.ofEpochMilli(tx.timestamp)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate()
-                if (sums.containsKey(d)) sums[d] = (sums[d] ?: 0.0) + tx.amount
+    Column(Modifier.jibetCard().padding(start = 8.dp, end = 8.dp, bottom = 8.dp)) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp, top = 14.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                "آخرین تراکنش‌ها",
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink),
+            )
+            Row(
+                Modifier.pressableScale(onClick = { onTab("transactions") }),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    "همه",
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.accentA),
+                )
+                Icon(
+                    Icons.Rounded.ChevronLeft,
+                    contentDescription = null,
+                    tint = jc.accentA,
+                    modifier = Modifier.size(14.dp),
+                )
             }
         }
-        dates.map { it to (sums[it] ?: 0.0) }
-    }
-    val maxV = (days.maxOfOrNull { it.second } ?: 0.0).coerceAtLeast(1.0)
-    val animatedMax by animateFloatAsState(
-        targetValue = maxV.toFloat(),
-        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
-        label = "weekMax"
-    )
-    Column {
-        Canvas(Modifier.fillMaxWidth().height(110.dp)) {
-            val slot = size.width / days.size
-            val barW = (slot * 0.42f).coerceIn(6.dp.toPx(), 20.dp.toPx())
-            days.forEachIndexed { i, (date, v) ->
-                if (v > 0.0 && animatedMax > 0f) {
-                    val slotLeft = size.width - (i + 1) * slot
-                    val cx = slotLeft + slot / 2f
-                    val h = ((v.toFloat() / animatedMax) * size.height)
-                        .coerceIn(4.dp.toPx(), size.height)
-                    val color = if (i == days.lastIndex) jc.income else jc.expense.copy(alpha = 0.85f)
-                    drawRoundRect(
-                        color = color,
-                        topLeft = Offset(cx - barW / 2f, size.height - h),
-                        size = Size(barW, h),
-                        cornerRadius = CornerRadius(barW / 2f, barW / 2f)
-                    )
+
+        val recentList = recent
+        when {
+            recentList == null -> RecentSkeleton()
+            recentList.isEmpty() -> {
+                Column(Modifier.padding(bottom = 8.dp)) {
+                    EmptyState(title = "هنوز تراکنشی ثبت نشده")
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(
+                            Modifier
+                                .shadow(
+                                    12.dp,
+                                    CircleShape,
+                                    spotColor = Color(0x995B74E9),
+                                    ambientColor = Color.Transparent,
+                                )
+                                .clip(CircleShape)
+                                .background(accentGradient())
+                                .pressableScale(onClick = { UiBus.openAdd() })
+                                .padding(horizontal = 24.dp)
+                                .height(44.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Icon(
+                                Icons.Rounded.Add,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Text(
+                                "ثبت اولین تراکنش",
+                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White),
+                            )
+                        }
+                    }
+                }
+            }
+            else -> {
+                Column(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp)) {
+                    recentList.forEachIndexed { index, tx ->
+                        if (index > 0) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(Divider)
+                            )
+                        }
+                        // ورود پله‌ای ردیف‌ها — ۳۰ms فاصله مثل staggerChildren وب
+                        FadeIn(delayMs = index * 30) {
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .pressableScale(onClick = { UiBus.openDetail(tx.id) })
+                                    .padding(horizontal = 8.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                IconBubble(
+                                    icon = tx.catIcon ?: "more-horizontal",
+                                    color = parseColor(tx.catColor),
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        tx.title,
+                                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        "${tx.accName ?: "حساب"} · ${Fmt.faDigits(JDate.formatJalaliDate(tx.date, JDate.Style.SHORT))}",
+                                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                AmountText(
+                                    amount = tx.amount,
+                                    kind = tx.kind,
+                                    suffix = "",
+                                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.5.sp),
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
-        Spacer(Modifier.height(6.dp))
-        Row(Modifier.fillMaxWidth()) {
-            days.forEach { (date, _) ->
-                Text(
-                    text = Fmt.weekdayShort(date.dayOfWeek),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
     }
 }
 
+/** اسکلتون بارگذاری — ۳ ردیف با حباب و میله‌های #F1F3F9 */
 @Composable
-private fun RecentTxRow(
-    tx: TransactionEntity,
-    cat: CategoryEntity?,
-    acc: AccountEntity,
-    onOpen: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onOpen)
-            .padding(horizontal = 6.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+private fun RecentSkeleton() {
+    Column(
+        Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        if (cat != null) EmojiBadge(emoji = cat.emoji, colorHex = cat.colorHex)
-        else EmojiBadge(emoji = "🏷", colorHex = "#6F7975")
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = cat?.name ?: "بدون دسته",
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = acc.name + " • " + (Fmt.relativeDay(tx.timestamp) ?: Fmt.date(tx.timestamp)),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (tx.note.isNotBlank()) {
-                Text(
-                    text = tx.note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+        repeat(3) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Divider)
+                )
+                Column(
+                    Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(
+                        Modifier
+                            .width(112.dp)
+                            .height(12.dp)
+                            .clip(CircleShape)
+                            .background(Divider)
+                    )
+                    Box(
+                        Modifier
+                            .width(80.dp)
+                            .height(10.dp)
+                            .clip(CircleShape)
+                            .background(Divider)
+                    )
+                }
+                Box(
+                    Modifier
+                        .width(64.dp)
+                        .height(12.dp)
+                        .clip(CircleShape)
+                        .background(Divider)
                 )
             }
-        }
-        Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            AmountText(
-                amount = tx.amount,
-                isIncome = tx.isIncome,
-                withCurrency = false,
-                style = MaterialTheme.typography.titleSmall
-            )
-            Text(
-                text = LocalCurrency.current,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

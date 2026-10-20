@@ -1,159 +1,46 @@
 package com.jibet.app.util
 
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.temporal.TemporalAdjusters
+import kotlin.math.abs
 import kotlin.math.roundToLong
-import java.util.Locale
 
+/** ابزارهای فرمت‌دهی فارسی: اعداد، پول، درصدها — قرارداد یکسان با نسخه وب */
 object Fmt {
 
-    private val FA = charArrayOf('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹')
+    private const val FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹"
 
-    /** Convert latin digits inside a string to Persian digits. */
-    fun fa(s: String): String = buildString {
-        for (c in s) append(if (c in '0'..'9') FA[c - '0'] else c)
+    /** 1234 → «۱٬۲۳۴» با ارقام فارسی (جداکننده «,» لاتین مثل وب) */
+    fun faDigits(input: Any): String = input.toString().map { c ->
+        if (c.isDigit()) FA_DIGITS[c - '0'] else c
+    }.joinToString("")
+
+    fun faDigits(input: Long): String = faDigits(input.toString())
+    fun faDigits(input: Int): String = faDigits(input.toString())
+
+    /** 32480000.0 → «۳۲,۴۸۰,۰۰۰» (منفی با علامت −) */
+    fun money(amount: Double): String {
+        val n = abs(amount).roundToLong()
+        val s = n.toString()
+            .replace(Regex("\\B(?=(\\d{3})+(?!\\d))"), ",")
+        return (if (amount < 0) "−" else "") + faDigits(s)
     }
 
-    fun faNum(n: Long): String = fa(n.toString())
+    fun money(amount: Long): String = money(amount.toDouble())
 
-    /** 1250000 -> ۱٬۲۵۰٬۰۰۰ */
-    fun money(v: Double): String {
-        val n = v.roundToLong()
-        return fa(String.format(Locale.US, "%,d", n).replace(',', '٬'))
-    }
+    /** 64.2 → «۶۴٪» */
+    fun percent(p: Double): String = "${faDigits(Math.round(p).toInt())}٪"
 
-    /** money + currency suffix */
-    fun moneyCurrency(v: Double, currency: String): String = money(v) + " " + currency
-
-    val MONTHS = listOf(
-        "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
-        "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
-    )
-
-    private val WEEKDAYS = mapOf(
-        DayOfWeek.SATURDAY to "شنبه",
-        DayOfWeek.SUNDAY to "یکشنبه",
-        DayOfWeek.MONDAY to "دوشنبه",
-        DayOfWeek.TUESDAY to "سه‌شنبه",
-        DayOfWeek.WEDNESDAY to "چهارشنبه",
-        DayOfWeek.THURSDAY to "پنجشنبه",
-        DayOfWeek.FRIDAY to "جمعه"
-    )
-
-    private val WEEKDAYS_SHORT = mapOf(
-        DayOfWeek.SATURDAY to "ش",
-        DayOfWeek.SUNDAY to "ی",
-        DayOfWeek.MONDAY to "د",
-        DayOfWeek.TUESDAY to "س",
-        DayOfWeek.WEDNESDAY to "چ",
-        DayOfWeek.THURSDAY to "پ",
-        DayOfWeek.FRIDAY to "ج"
-    )
-
-    fun weekday(ts: Long, zone: ZoneId = ZoneId.systemDefault()): String =
-        WEEKDAYS[Instant.ofEpochMilli(ts).atZone(zone).dayOfWeek] ?: ""
-
-    fun weekdayShort(dow: DayOfWeek): String = WEEKDAYS_SHORT[dow] ?: ""
-
-    /** ۱۴۰۳/۱۱/۳۰ */
-    fun date(ts: Long, zone: ZoneId = ZoneId.systemDefault()): String {
-        val p = Jalali.parts(ts, zone)
-        return fa(String.format(Locale.US, "%d/%02d/%02d", p[0], p[1], p[2]))
-    }
-
-    /** ۳۰ بهمن ۱۴۰۳ */
-    fun dateLong(ts: Long, zone: ZoneId = ZoneId.systemDefault()): String {
-        val p = Jalali.parts(ts, zone)
-        return faNum(p[2].toLong()) + " " + MONTHS[p[1] - 1] + " " + faNum(p[0].toLong())
-    }
-
-    /** "امروز" / "دیروز" / null */
-    fun relativeDay(ts: Long, zone: ZoneId = ZoneId.systemDefault()): String? {
-        val today = LocalDate.now(zone)
-        val d = Instant.ofEpochMilli(ts).atZone(zone).toLocalDate()
-        return when (d) {
-            today -> "امروز"
-            today.minusDays(1) -> "دیروز"
-            else -> null
-        }
-    }
-
-    /** friendly label: امروز / دیروز / شنبه / ۱۲ مهر */
-    fun dayLabel(ts: Long, zone: ZoneId = ZoneId.systemDefault()): String {
-        relativeDay(ts, zone)?.let { return it }
-        val d = Instant.ofEpochMilli(ts).atZone(zone).toLocalDate()
-        val today = LocalDate.now(zone)
-        return if (d.isAfter(today.minusDays(7))) {
-            weekday(ts, zone)
-        } else {
-            val p = Jalali.parts(ts, zone)
-            faNum(p[2].toLong()) + " " + MONTHS[p[1] - 1]
-        }
-    }
-
-    /** For material3 DatePicker: local date -> UTC start of that date (what the picker expects) */
-    fun tsToDatePicker(ts: Long, zone: ZoneId = ZoneId.systemDefault()): Long =
-        Instant.ofEpochMilli(ts).atZone(zone).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-
-    /** For material3 DatePicker: picked UTC millis -> local timestamp keeping time-of-day of base */
-    fun datePickerToTs(pickedUtcMillis: Long, baseTs: Long, zone: ZoneId = ZoneId.systemDefault()): Long {
-        val pickedDate = Instant.ofEpochMilli(pickedUtcMillis).atZone(ZoneOffset.UTC).toLocalDate()
-        val baseTime = Instant.ofEpochMilli(baseTs).atZone(zone).toLocalTime()
-        return LocalDateTime.of(pickedDate, baseTime).atZone(zone).toInstant().toEpochMilli()
-    }
-}
-
-object Ranges {
-
-    private fun zone() = ZoneId.systemDefault()
-
-    private fun startOfDay(d: LocalDate): Long = d.atStartOfDay(zone()).toInstant().toEpochMilli()
-
-    /** inclusive [from, to] epoch millis of today (local) */
-    fun today(now: Long = System.currentTimeMillis()): Pair<Long, Long> {
-        val d = Instant.ofEpochMilli(now).atZone(zone()).toLocalDate()
-        return startOfDay(d) to endOfDay(d)
-    }
-
-    private fun endOfDay(d: LocalDate): Long = d.plusDays(1).atStartOfDay(zone()).toInstant().toEpochMilli() - 1
-
-    /** Jalali week starts on Saturday */
-    fun thisWeek(now: Long = System.currentTimeMillis()): Pair<Long, Long> {
-        val d = Instant.ofEpochMilli(now).atZone(zone()).toLocalDate()
-        val start = d.with(TemporalAdjusters.previousOrSame(DayOfWeek.SATURDAY))
-        val end = start.plusDays(7)
-        return startOfDay(start) to startOfDay(end) - 1
-    }
-
-    /** current Jalali month [from, to] */
-    fun thisMonth(now: Long = System.currentTimeMillis()): Pair<Long, Long> {
-        val p = Jalali.parts(now)
-        val startG = Jalali.toGregorian(p[0], p[1], 1)
-        val start = LocalDate.of(startG[0], startG[1], startG[2])
-        val nm = if (p[1] == 12) intArrayOf(p[0] + 1, 1, 1) else intArrayOf(p[0], p[1] + 1, 1)
-        val nextG = Jalali.toGregorian(nm[0], nm[1], nm[2])
-        val end = LocalDate.of(nextG[0], nextG[1], nextG[2])
-        return startOfDay(start) to startOfDay(end) - 1
-    }
-
-    /** current Jalali year [from, to] */
-    fun thisYear(now: Long = System.currentTimeMillis()): Pair<Long, Long> {
-        val p = Jalali.parts(now)
-        val startG = Jalali.toGregorian(p[0], 1, 1)
-        val start = LocalDate.of(startG[0], startG[1], startG[2])
-        val nextG = Jalali.toGregorian(p[0] + 1, 1, 1)
-        val end = LocalDate.of(nextG[0], nextG[1], nextG[2])
-        return startOfDay(start) to startOfDay(end) - 1
-    }
-
-    /** last N days including today: list of local dates, oldest first */
-    fun lastNDates(n: Int, now: Long = System.currentTimeMillis()): List<LocalDate> {
-        val today = Instant.ofEpochMilli(now).atZone(zone()).toLocalDate()
-        return (n - 1 downTo 0).map { today.minusDays(it.toLong()) }
+    /** تبدیل رشته‌ی فارسی/لاتین عدد به Double — همه‌ی جداکننده‌ها حذف می‌شوند */
+    fun parseNumber(input: String): Double {
+        val cleaned = input
+            .map { c ->
+                when {
+                    c in '۰'..'۹' -> ('0' + (c - '۰'))
+                    c in '٠'..'٩' -> ('0' + (c - '٠'))
+                    else -> c
+                }
+            }
+            .filter { it.isDigit() }
+            .joinToString("")
+        return if (cleaned.isEmpty()) 0.0 else cleaned.toDouble()
     }
 }
