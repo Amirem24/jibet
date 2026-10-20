@@ -126,7 +126,7 @@ class AccountsViewModel(app: Application) : AndroidViewModel(app) {
     var confirmDelete by mutableStateOf(false)
         private set
 
-    fun setName(v: String) {
+    fun editName(v: String) {
         if (v.length <= 40) name = v
     }
 
@@ -134,11 +134,11 @@ class AccountsViewModel(app: Application) : AndroidViewModel(app) {
         kind = v
     }
 
-    fun setColor(c: String) {
+    fun editColor(c: String) {
         color = c
     }
 
-    fun setIcon(i: String) {
+    fun editIcon(i: String) {
         icon = i
     }
 
@@ -392,7 +392,7 @@ private fun AccountSheet(vm: AccountsViewModel, jc: JibetColors) {
             JibetField(label = "نام حساب") {
                 NameInput(
                     value = vm.name,
-                    onChange = vm::setName,
+                    onChange = vm::editName,
                     placeholder = "مثلاً کارت بانکی ملت",
                     accent = jc.accentA,
                 )
@@ -419,7 +419,7 @@ private fun AccountSheet(vm: AccountsViewModel, jc: JibetColors) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     CATEGORY_COLORS.forEach { c ->
-                        ColorSwatch(hex = c, selected = vm.color == c, onClick = { vm.setColor(c) })
+                        ColorSwatch(hex = c, selected = vm.color == c, onClick = { vm.editColor(c) })
                     }
                 }
             }
@@ -431,7 +431,7 @@ private fun AccountSheet(vm: AccountsViewModel, jc: JibetColors) {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     ACCOUNT_ICONS.forEach { ic ->
-                        IconTile(icon = ic, colorHex = vm.color, active = vm.icon == ic, onClick = { vm.setIcon(ic) })
+                        IconTile(icon = ic, colorHex = vm.color, active = vm.icon == ic, onClick = { vm.editIcon(ic) })
                     }
                 }
             }
