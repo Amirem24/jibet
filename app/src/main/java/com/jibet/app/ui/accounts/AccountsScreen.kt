@@ -130,7 +130,7 @@ class AccountsViewModel(app: Application) : AndroidViewModel(app) {
         if (v.length <= 40) name = v
     }
 
-    fun setKind(v: AccountKind) {
+    fun editKind(v: AccountKind) {
         kind = v
     }
 
@@ -400,7 +400,7 @@ private fun AccountSheet(vm: AccountsViewModel, jc: JibetColors) {
 
             Column {
                 SectionLabel("نوع حساب")
-                KindChips(selected = vm.kind, onSelect = vm::setKind, jc)
+                KindChips(selected = vm.kind, onSelect = vm::editKind, jc)
             }
 
             JibetField(label = "موجودی اولیه") {
