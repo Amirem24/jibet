@@ -113,7 +113,7 @@ class CategoriesViewModel(app: Application) : AndroidViewModel(app) {
     var confirmDelete by mutableStateOf(false)
         private set
 
-    fun setKind(v: Kind) {
+    fun editKind(v: Kind) {
         kind = v
     }
 
