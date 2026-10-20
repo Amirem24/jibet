@@ -225,7 +225,7 @@ fun CategoriesScreen(onBack: () -> Unit) {
             JibetSegmented(
                 value = vm.kind,
                 options = listOf(Kind.EXPENSE to "هزینه", Kind.INCOME to "درآمد"),
-                onChange = { vm.setKind(it) },
+                onChange = { vm.editKind(it) },
                 activeColor = if (vm.kind == Kind.EXPENSE) jc.expense else jc.income,
             )
         }
