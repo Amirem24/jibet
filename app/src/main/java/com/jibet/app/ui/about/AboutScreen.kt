@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.jibet.app.BuildConfig
 import com.jibet.app.ui.components.JibetLogo
 import com.jibet.app.ui.components.ScreenHeader
 import com.jibet.app.ui.components.jibetCard
@@ -69,8 +70,8 @@ fun AboutScreen(onBack: () -> Unit) {
     // .jb-accent-soft وب: پس‌زمینه = ۱۲٪ accentA روی سفید، متن = ۸۰٪ accentA + ۲۰٪ ink
     val softBg = lerp(Color.White, jc.accentA, 0.12f)
     val softFg = lerp(Ink, jc.accentA, 0.8f)
-    // نسخه با ارقام فارسی و جداکننده «٫» — مثل وب
-    val version = Fmt.faDigits("2.0.0").replace('.', '٫')
+    // نسخه با ارقام فارسی و جداکننده «٫» — از BuildConfig تا همیشه با نسخه‌ی واقعی یکی باشد
+    val version = Fmt.faDigits(BuildConfig.VERSION_NAME).replace('.', '٫')
 
     Column(
         Modifier

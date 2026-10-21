@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -35,6 +36,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,8 +47,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -83,18 +87,25 @@ import com.jibet.app.ui.transactions.TransactionsScreen
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // اپ همیشه روشن است — آیکون‌های نوار وضعیت باید تیره بمانند (مثل وب)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
+        )
         val app = application as JibetApp
         setContent {
             val accent by app.settings.accent.collectAsState(initial = "blue")
             JibetTheme(accentKey = accent) {
-                Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
-                    val boot by app.settings.bootState.collectAsState(initial = BootState.Loading)
-                    Box(Modifier.fillMaxSize().jibetBackdrop()) {
-                        when (boot) {
-                            BootState.Loading -> Splash()
-                            BootState.Fresh -> OnboardingScreen()
-                            BootState.Done -> MainApp(app)
+                // کل اپ مثل وب dir="rtl" است — مستقل از لوکال دستگاه
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
+                        val boot by app.settings.bootState.collectAsState(initial = BootState.Loading)
+                        Box(Modifier.fillMaxSize().jibetBackdrop()) {
+                            when (boot) {
+                                BootState.Loading -> Splash()
+                                BootState.Fresh -> OnboardingScreen()
+                                BootState.Done -> MainApp(app)
+                            }
                         }
                     }
                 }

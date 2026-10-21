@@ -193,7 +193,7 @@ fun Modifier.jibetCard(shape: Shape = RoundedCornerShape(24.dp)): Modifier = thi
     .clip(shape)
     .background(Color.White)
 
-/** سطوح شیشه‌ای — مثل .jb-glass وب (بلور تقریبی با گرادیان نیمه‌شفاف) */
+/** سطوح شیشه‌ای — مثل .jb-glass وب (بلور تقریبی با گرادیان نیمه‌شفاف + هایلایت داخلی لبه بالا) */
 fun Modifier.jibetGlass(shape: Shape = RoundedCornerShape(24.dp)): Modifier = this
     .shadow(
         elevation = 12.dp,
@@ -209,9 +209,16 @@ fun Modifier.jibetGlass(shape: Shape = RoundedCornerShape(24.dp)): Modifier = th
             end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
         )
     )
-    .border(1.dp, Color.White.copy(alpha = 0.65f), shape)
+    // حاشیه‌ی گرادیانی = هایلایت inset «0 1px 0 rgba(255,255,255,.7)» وب
+    .border(
+        1.dp,
+        Brush.verticalGradient(
+            listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.15f))
+        ),
+        shape,
+    )
 
-/** افکت فشردن نرم — مثل .jb-pressable وب */
+/** افکت فشردن نرم — مثل .jb-pressable وب (scale .97 + آلفا .۹ حین فشردن) */
 @Composable
 fun Modifier.pressableScale(
     onClick: (() -> Unit)? = null,
@@ -226,6 +233,7 @@ fun Modifier.pressableScale(
     )
     val base = this
         .scale(scale)
+        .alpha(if (pressed) 0.9f else 1f)
         .then(
             if (onClick != null) {
                 Modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick)
@@ -587,7 +595,7 @@ fun EmptyState(
     }
 }
 
-/** دکمه‌ی اصلی گرادیانی */
+/** دکمه‌ی اصلی گرادیانی — مثل AccentButton وب که همیشه w-full است */
 @Composable
 fun AccentButton(
     text: String,
@@ -599,6 +607,7 @@ fun AccentButton(
     val jc = LocalJibetColors.current
     Row(
         modifier
+            .fillMaxWidth()
             .shadow(
                 16.dp,
                 RoundedCornerShape(16.dp),
@@ -609,8 +618,7 @@ fun AccentButton(
             .background(accentGradient())
             .alpha(if (enabled) 1f else 0.5f)
             .pressableScale(onClick = if (enabled) onClick else null, pressedScale = 0.98f)
-            .height(52.dp)
-            .then(modifier),
+            .height(52.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {

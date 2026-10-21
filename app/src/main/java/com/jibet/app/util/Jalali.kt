@@ -205,9 +205,10 @@ object JDate {
 
     fun millis(date: LocalDate): Long = startOfDay(date)
 
-    /** ساعت:دقیقه از epoch millis (مثلاً ۱۴:۰۵) */
+    /** ساعت:دقیقه از epoch millis (مثلاً ۱۴:۰۵) — Locale.US تا ارقام همیشه لاتین بمانند
+     *  (روی دستگاه‌های fa-IR فرمت بدون Locale ارقام فارسی می‌سازد و faDigits را می‌شکند) */
     fun timeLabel(millis: Long, zone: ZoneId = ZoneId.systemDefault()): String {
         val t = Instant.ofEpochMilli(millis).atZone(zone).toLocalTime()
-        return String.format("%02d:%02d", t.hour, t.minute)
+        return String.format(java.util.Locale.US, "%02d:%02d", t.hour, t.minute)
     }
 }

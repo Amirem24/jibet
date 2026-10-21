@@ -14,8 +14,8 @@ android {
         applicationId = "com.jibet.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "2.0.0"
+        versionCode = 4
+        versionName = "2.1.0"
     }
 
     buildTypes {
@@ -37,7 +37,7 @@ android {
             "-opt-in=androidx.compose.animation.ExperimentalAnimationApi"
         )
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     lint { abortOnError = false }
 }

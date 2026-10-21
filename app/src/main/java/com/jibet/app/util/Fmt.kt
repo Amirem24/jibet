@@ -8,9 +8,11 @@ object Fmt {
 
     private const val FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹"
 
-    /** 1234 → «۱٬۲۳۴» با ارقام فارسی (جداکننده «,» لاتین مثل وب) */
+    /** 1234 → «۱٬۲۳۴» با ارقام فارسی (جداکننده «,» لاتین مثل وب)
+     *  فقط ارقام ASCII نگاشت می‌شوند — ارقام فارسی/عربی دست‌نخورده می‌مانند تا
+     *  ورودی دو-بار-فرمت‌شده هرگز StringIndexOutOfBounds نسازد. */
     fun faDigits(input: Any): String = input.toString().map { c ->
-        if (c.isDigit()) FA_DIGITS[c - '0'] else c
+        if (c in '0'..'9') FA_DIGITS[c - '0'] else c
     }.joinToString("")
 
     fun faDigits(input: Long): String = faDigits(input.toString())

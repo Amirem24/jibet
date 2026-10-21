@@ -11,7 +11,10 @@ import com.jibet.app.R
 val Vazir = FontFamily(
     Font(R.font.vazirmatn_regular, FontWeight.Normal),
     Font(R.font.vazirmatn_medium, FontWeight.Medium),
+    Font(R.font.vazirmatn_semibold, FontWeight.SemiBold),
     Font(R.font.vazirmatn_bold, FontWeight.Bold),
+    Font(R.font.vazirmatn_extrabold, FontWeight.ExtraBold),
+    Font(R.font.vazirmatn_black, FontWeight.Black),
 )
 
 /** تایپوگرافی با فونت وزیرمتن — اندازه‌ها مطابق وب */

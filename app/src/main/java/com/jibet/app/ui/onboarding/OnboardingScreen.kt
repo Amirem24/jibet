@@ -4,6 +4,7 @@ package com.jibet.app.ui.onboarding
 
 import android.app.Application
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -41,6 +42,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.imeNestedScroll
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -48,6 +51,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,10 +87,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
@@ -93,9 +100,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -128,18 +137,23 @@ import com.jibet.app.util.PresetCategory
 import com.jibet.app.util.SUGGESTED_EXPENSE_KEYS
 import com.jibet.app.util.SUGGESTED_INCOME_KEYS
 import kotlin.math.roundToInt
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /* ============================================================
    آنبوردینگ جیبت — پورت ۱:۱ از screens/onboarding.tsx نسخه وب
    مراحل: ۰ اسپلش، ۱ خوش‌آمد، ۲ حساب‌ها، ۳ دسته‌بندی‌ها، ۴ آماده
+   شمارنده‌ی هدر فقط ۳ مرحله‌ی واقعی راه‌اندازی را می‌شمارد:
+   حساب‌ها «۱ از ۳»، دسته‌بندی‌ها «۲ از ۳»، آماده «۳ از ۳»
    پایان آنبوردینگ: setup + setOnboarded → MainActivity خودش UI اصلی را نشان می‌دهد
    ============================================================ */
 
-/** تعداد مراحل (بدون اسپلش) */
-private const val TOTAL_STEPS = 4
+/** تعداد مراحل واقعی ستاپ که در هدر شمرده می‌شوند (حساب‌ها، دسته‌ها، آماده) */
+private const val TOTAL_STEPS = 3
+
+/** آخرین ایندکس مرحله‌ی داخلی (۰ اسپلش، ۱ خوش‌آمد، ۲ حساب‌ها، ۳ دسته‌ها، ۴ آماده) */
+private const val LAST_STEP = 4
 
 class OnboardingViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -171,7 +185,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         private set
 
     fun go(n: Int) {
-        step = n.coerceIn(0, TOTAL_STEPS)
+        step = n.coerceIn(0, LAST_STEP)
     }
 
     fun toggleAcc(key: String) {
@@ -198,7 +212,9 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         catSel = PRESET_CATEGORIES.map { it.key }.toSet()
     }
 
-    /** ارسال انتخاب‌ها و پایان آنبوردینگ — MainActivity با تغییر bootState سوئیچ می‌کند */
+    /** ارسال انتخاب‌ها و پایان آنبوردینگ — MainActivity با تغییر bootState سوئیچ می‌کند
+     *  نکته: بدون Dispatchers.IO — توابع suspend مخزن و DataStore خودشان thread-safe هستند
+     *  و Toast باید روی ترد اصلی (Main) نمایش داده شود وگرنه کرش می‌کند. */
     fun finish() {
         if (saving) return
         saving = true
@@ -206,10 +222,12 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             .filter { it.key in accSel }
             .map { AccountDraft(key = it.key, balance = balances[it.key] ?: 0.0) }
         val categoryKeys = PRESET_CATEGORIES.filter { it.key in catSel }.map { it.key }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 repo.setup(accounts, categoryKeys)
                 settings.setOnboarded()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 saving = false
                 Toast.makeText(getApplication(), "خطا در ذخیره‌ی راه‌اندازی", Toast.LENGTH_SHORT).show()
@@ -218,32 +236,38 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     }
 }
 
-/** ویزارد راه‌اندازی اولیه — اسپلش + ۴ مرحله */
+/** ویزارد راه‌اندازی اولیه — اسپلش + خوش‌آمد + ۳ مرحله‌ی شمارش‌شدنی */
 @Composable
 fun OnboardingScreen() {
     val vm: OnboardingViewModel = viewModel()
     val density = LocalDensity.current
     val slidePx = remember(density) { with(density) { 56.dp.toPx().roundToInt() } }
 
+    // دکمه‌ی بازگشت سیستم = مرحله‌ی قبلی ویزارد (مثل رفتار طبیعی اپ)
+    BackHandler(enabled = vm.step in 1..4 && !vm.saving) { vm.go(vm.step - 1) }
+
     Column(
         Modifier
             .fillMaxSize()
+            // کیبورد فیلد موجودی را نمی‌پوشاند
+            .imePadding()
             // مثل overflow-hidden ریشه وب
             .clipToBounds(),
     ) {
-        if (vm.step >= 1) {
+        // هدر فقط روی مراحل واقعی ستاپ (حساب‌ها، دسته‌ها، آماده) — خوش‌آمد شمرده نمی‌شود
+        if (vm.step >= 2) {
             StepHeader(step = vm.step, busy = vm.saving, onSkip = vm::finish)
         }
 
-        // مثل AnimatePresence mode="wait" — اسلاید ±۵۶dp + فید، ۲۰۰ms
+        // مثل AnimatePresence mode="wait" وب — خروج ۲۰۰ms تمام می‌شود، بعد ورود شروع می‌شود
         AnimatedContent(
             targetState = vm.step,
             modifier = Modifier.weight(1f),
             transitionSpec = {
                 val d = if (targetState > initialState) 1 else -1
                 (
-                    slideInHorizontally(tween(200, easing = LinearOutSlowInEasing)) { _ -> d * slidePx } +
-                        fadeIn(tween(200, easing = LinearOutSlowInEasing))
+                    slideInHorizontally(tween(200, delayMillis = 200, easing = LinearOutSlowInEasing)) { _ -> d * slidePx } +
+                        fadeIn(tween(200, delayMillis = 200, easing = LinearOutSlowInEasing))
                     ) togetherWith (
                     slideOutHorizontally(tween(200, easing = LinearOutSlowInEasing)) { _ -> -d * slidePx } +
                         fadeOut(tween(200, easing = LinearOutSlowInEasing))
@@ -283,6 +307,8 @@ fun OnboardingScreen() {
 @Composable
 private fun StepHeader(step: Int, busy: Boolean, onSkip: () -> Unit) {
     val jc = LocalJibetColors.current
+    // شماره‌ی نمایشی: مرحله‌ی داخلی ۲..۴ → «۱..۳ از ۳»
+    val displayStep = step - 1
     Row(
         Modifier
             .fillMaxWidth()
@@ -292,7 +318,7 @@ private fun StepHeader(step: Int, busy: Boolean, onSkip: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            "${Fmt.faDigits(step)} از ${Fmt.faDigits(TOTAL_STEPS)}",
+            "${Fmt.faDigits(displayStep)} از ${Fmt.faDigits(TOTAL_STEPS)}",
             style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = Ink),
             modifier = Modifier.widthIn(min = 56.dp),
         )
@@ -303,16 +329,16 @@ private fun StepHeader(step: Int, busy: Boolean, onSkip: () -> Unit) {
         ) {
             for (i in 1..TOTAL_STEPS) {
                 val dotScale by animateFloatAsState(
-                    targetValue = if (i == step) 1.35f else 1f,
+                    targetValue = if (i == displayStep) 1.35f else 1f,
                     animationSpec = tween(200),
                     label = "dotScale$i",
                 )
-                val dotModifier = if (i == step) {
+                val dotModifier = if (i == displayStep) {
                     // گرادیان accent مثل jb-accent-gradient وب
                     Modifier.background(accentGradient())
                 } else {
                     Modifier.background(
-                        if (i < step) jc.accentA.copy(alpha = 0.35f) else Color(0x1A232B3B),
+                        if (i < displayStep) jc.accentA.copy(alpha = 0.35f) else Color(0x1A232B3B),
                     )
                 }
                 Box(
@@ -376,7 +402,8 @@ private fun SplashStep(onStart: () -> Unit) {
                 w * 1.22f - 210.dp to h * -0.06f,
                 w * -0.18f to h * 0.84f - 150.dp,
                 w * 0.10f to h * 0.26f,
-                w * 1.12f - 76.dp to h * 0.76f - 76.dp,
+                // bottom:24% right:12% → x = 0.88w − 76
+                w * 0.88f - 76.dp to h * 0.76f - 76.dp,
                 w * 1.08f - 120.dp to h * 0.55f,
             )
             BUBBLES.forEachIndexed { i, b ->
@@ -741,6 +768,7 @@ private fun AccountsStep(
         Column(
             Modifier
                 .weight(1f)
+                .imeNestedScroll()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 8.dp),
@@ -906,7 +934,7 @@ private fun AccountCard(
     }
 }
 
-/** فیلد موجودی اولیه — استایل inputClass وب + پسوند «تومان» داخل فیلد */
+/** فیلد موجودی اولیه — استایل inputClass وب + حلقه‌ی فوکوس accent + مکان‌نمای پایدار */
 @Composable
 private fun BalanceField(
     raw: String,
@@ -914,30 +942,63 @@ private fun BalanceField(
     accName: String,
 ) {
     val jc = LocalJibetColors.current
-    val display = if (raw.isEmpty()) "" else Fmt.money(Fmt.parseNumber(raw))
     val shape = RoundedCornerShape(16.dp)
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+
+    // مقدار نمایشی فرمت‌شده به‌همراه انتخاب مکان‌نما — مثل TextFieldValue وب
+    var fieldValue by remember { mutableStateOf(TextFieldValue("")) }
+
+    // سینک با raw بیرونی (مثلاً بعد از بازگشت به مرحله)
+    LaunchedEffect(raw) {
+        if (Fmt.parseNumber(fieldValue.text) != Fmt.parseNumber(raw)) {
+            fieldValue = TextFieldValue(
+                text = if (raw.isEmpty()) "" else Fmt.money(Fmt.parseNumber(raw)),
+                selection = TextRange(if (raw.isEmpty()) 0 else Fmt.money(Fmt.parseNumber(raw)).length),
+            )
+        }
+    }
+
     Box(
         Modifier
             .fillMaxWidth()
             .height(48.dp)
             .clip(shape)
             .background(Color.White.copy(alpha = 0.85f))
-            .border(1.dp, InkSoft.copy(alpha = 0.18f), shape),
+            .border(
+                width = if (focused) 2.dp else 1.dp,
+                color = if (focused) jc.accentA else InkSoft.copy(alpha = 0.18f),
+                shape = shape,
+            ),
     ) {
         BasicTextField(
-            value = display,
-            onValueChange = onValueChange,
+            value = fieldValue,
+            onValueChange = { input ->
+                // تعداد رقم‌های پیش از مکان‌نمای کاربر حفظ می‌شود تا پرش نکند
+                val digitsBefore = input.text.take(input.selection.start).count { it.isDigit() }
+                val formatted = if (input.text.isEmpty()) "" else Fmt.money(Fmt.parseNumber(input.text))
+                var idx = 0
+                var count = 0
+                for ((i, c) in formatted.withIndex()) {
+                    if (count >= digitsBefore) break
+                    if (c.isDigit()) count++
+                    idx = i + 1
+                }
+                fieldValue = TextFieldValue(formatted, TextRange(idx))
+                onValueChange(input.text)
+            },
             singleLine = true,
             textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
             cursorBrush = SolidColor(jc.accentA),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            interactionSource = interaction,
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight(Alignment.CenterVertically)
                 .padding(start = 16.dp, end = 64.dp)
                 .semantics { contentDescription = "موجودی اولیه $accName" },
         )
-        if (display.isEmpty()) {
+        if (fieldValue.text.isEmpty()) {
             Text(
                 "مثلاً " + Fmt.money(500000.0),
                 style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
@@ -998,6 +1059,8 @@ private fun CategoriesStep(
                 Text(
                     "${Fmt.faDigits(selected.size)} دسته انتخاب شده",
                     style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TextMid),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
                 GlassPill(icon = Icons.Rounded.Refresh, label = "بازنشانی پیشنهادی", onClick = onReset)
@@ -1199,12 +1262,20 @@ private fun ReadyStep(busy: Boolean, onFinish: () -> Unit) {
                                 .background(jc.income),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(
-                                Icons.Rounded.Check,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(38.dp),
+                            // درخشش داخلی بالای دایره — معادل inset highlight وب
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(40.dp)
+                                    .align(Alignment.TopCenter)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(Color.White.copy(alpha = 0.35f), Color.Transparent)
+                                        )
+                                    ),
                             )
+                            // تیکِ کشیده‌شونده با مسیر — مثل انیمیشن SVG وب (۳۵۰ms، تأخیر ۲۵۰ms)
+                            DrawnCheck(modifier = Modifier.size(38.dp))
                         }
                     }
                 }
@@ -1266,6 +1337,40 @@ private fun ReadyStep(busy: Boolean, onFinish: () -> Unit) {
 }
 
 /* ---------- انیمیشن‌های ورود مشترک ---------- */
+
+/** تیکِ کشیده‌شونده — مسیر SVG وب «M5 12.5l4.5 4.5L19 7.5» با stroke ۳ و انیمیشن ۳۵۰ms */
+@Composable
+private fun DrawnCheck(modifier: Modifier = Modifier) {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(250)
+        progress.animateTo(1f, tween(350, easing = LinearOutSlowInEasing))
+    }
+    Canvas(modifier) {
+        val u = size.width / 24f
+        val path = Path().apply {
+            moveTo(5f * u, 12.5f * u)
+            lineTo(9.5f * u, 17f * u)
+            lineTo(19f * u, 7.5f * u)
+        }
+        val measure = PathMeasure().apply { setPath(path, false) }
+        if (progress.value >= 1f) {
+            drawPath(
+                path,
+                color = Color.White,
+                style = Stroke(width = 3f * u, cap = StrokeCap.Round, join = StrokeJoin.Round),
+            )
+        } else {
+            val dst = Path()
+            measure.getSegment(0f, measure.length * progress.value, dst, true)
+            drawPath(
+                dst,
+                color = Color.White,
+                style = Stroke(width = 3f * u, cap = StrokeCap.Round, join = StrokeJoin.Round),
+            )
+        }
+    }
+}
 
 /** ورود فنری (اسپرینگ) با اسکیل + آلفا — مثل motion.spring فریمر */
 @Composable

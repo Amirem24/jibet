@@ -1,10 +1,12 @@
 package com.jibet.app
 
 import android.app.Application
+import android.util.Log
 import com.jibet.app.data.JibetDatabase
 import com.jibet.app.data.JibetRepository
 import com.jibet.app.data.Kind
 import com.jibet.app.data.SettingsRepository
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,7 +39,12 @@ object UiBus {
 
 class JibetApp : Application() {
 
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    /** خطاهای پس‌زمینه هرگز پروسه را نمی‌کُشند — فقط لاگ می‌شوند */
+    private val scopeErrorHandler = CoroutineExceptionHandler { _, t ->
+        Log.e("Jibet", "خطای پس‌زمینه", t)
+    }
+
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO + scopeErrorHandler)
 
     val database: JibetDatabase by lazy { JibetDatabase.create(this) }
     val repository: JibetRepository by lazy {
