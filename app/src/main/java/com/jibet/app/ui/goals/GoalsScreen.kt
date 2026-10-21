@@ -66,6 +66,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -91,12 +92,7 @@ import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetInputShape
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.ExpenseSoft
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
 import com.jibet.app.util.GOAL_COLORS
@@ -176,6 +172,7 @@ fun GoalsScreen(onBack: () -> Unit) {
     var depositGoal by remember { mutableStateOf<GoalEntity?>(null) }
     var armedId by remember { mutableStateOf<Long?>(null) }
     val scope = rememberCoroutineScope()
+    val jc = LocalJibetColors.current
 
     // خنثی‌سازی تأیید حذف بعد از چند ثانیه
     LaunchedEffect(armedId) {
@@ -203,7 +200,7 @@ fun GoalsScreen(onBack: () -> Unit) {
                     Icon(
                         Icons.Rounded.Add,
                         contentDescription = "افزودن هدف",
-                        tint = TextMid,
+                        tint = jc.textMid,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -287,6 +284,7 @@ private fun GoalCard(
     val pct = if (goal.targetAmount > 0) (goal.savedAmount / goal.targetAmount) * 100.0 else 0.0
     val showPct = pct.coerceIn(0.0, 100.0)
     val remaining = maxOf(0.0, goal.targetAmount - goal.savedAmount)
+    val jc = LocalJibetColors.current
 
     Column(
         Modifier
@@ -304,13 +302,13 @@ private fun GoalCard(
             Column(Modifier.weight(1f)) {
                 Text(
                     goal.title,
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = jc.ink),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     "هدف: ${Fmt.money(goal.targetAmount)} تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
@@ -324,7 +322,7 @@ private fun GoalCard(
                         Modifier
                             .shadow(2.dp, CircleShape, spotColor = Color(0x1A232B3B), ambientColor = Color.Transparent)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.7f))
+                            .background(jc.cardSoft)
                             .pressableScale(onClick = onDisarm)
                             .size(44.dp),
                         contentAlignment = Alignment.Center,
@@ -332,7 +330,7 @@ private fun GoalCard(
                         Icon(
                             Icons.Rounded.Close,
                             contentDescription = "انصراف",
-                            tint = InkSoft,
+                            tint = jc.inkSoft,
                             modifier = Modifier.size(17.dp),
                         )
                     }
@@ -340,7 +338,7 @@ private fun GoalCard(
                     Row(
                         Modifier
                             .clip(CircleShape)
-                            .background(LocalJibetColors.current.expense)
+                            .background(jc.expense)
                             .pressableScale(onClick = onDelete)
                             .padding(horizontal = 14.dp)
                             .height(44.dp),
@@ -368,7 +366,7 @@ private fun GoalCard(
                         Icon(
                             Icons.Rounded.Edit,
                             contentDescription = "ویرایش ${goal.title}",
-                            tint = InkSoft,
+                            tint = jc.inkSoft,
                             modifier = Modifier.size(15.dp),
                         )
                     }
@@ -376,7 +374,7 @@ private fun GoalCard(
                         Icon(
                             Icons.Rounded.Delete,
                             contentDescription = "حذف ${goal.title}",
-                            tint = InkSoft,
+                            tint = jc.inkSoft,
                             modifier = Modifier.size(15.dp),
                         )
                     }
@@ -393,7 +391,7 @@ private fun GoalCard(
                     fontFamily = Vazir,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 10.sp,
-                    color = if (showPct >= 48) Color.White else TextMid,
+                    color = if (showPct >= 48) Color.White else jc.textMid,
                 ),
                 modifier = Modifier.align(Alignment.Center),
             )
@@ -408,14 +406,14 @@ private fun GoalCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("پس‌انداز شده ", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft))
-                Text(Fmt.money(goal.savedAmount), style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = Ink))
-                Text(" تومان", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft))
+                Text("پس‌انداز شده ", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft))
+                Text(Fmt.money(goal.savedAmount), style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = jc.ink))
+                Text(" تومان", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft))
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("باقی‌مانده ", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft))
+                Text("باقی‌مانده ", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft))
                 Text(Fmt.money(remaining), style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = color))
-                Text(" تومان", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft))
+                Text(" تومان", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft))
             }
         }
 
@@ -435,23 +433,23 @@ private fun GoalCard(
                     Icon(
                         Icons.Rounded.CalendarMonth,
                         contentDescription = null,
-                        tint = InkSoft,
+                        tint = jc.inkSoft,
                         modifier = Modifier.size(14.dp),
                     )
                     Text(
                         "تا ${Fmt.faDigits(goal.deadline!!)}",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                     )
                 } else {
                     Icon(
                         Icons.Rounded.GpsFixed,
                         contentDescription = null,
-                        tint = InkSoft,
+                        tint = jc.inkSoft,
                         modifier = Modifier.size(14.dp),
                     )
                     Text(
                         "بدون مهلت",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                     )
                 }
             }
@@ -484,12 +482,13 @@ private fun GoalCard(
 /** دکمه دایره‌ای کوچک white/70 — مثل وب */
 @Composable
 private fun SmallCircleButton(onClick: () -> Unit, content: @Composable () -> Unit) {
+    val jc = LocalJibetColors.current
     Box(
         Modifier
             .shadow(2.dp, CircleShape, spotColor = Color(0x1A232B3B), ambientColor = Color.Transparent)
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.7f))
-            .pressableScale(onClick = onClick)
+            .background(jc.cardSoft)
+            .pressableScale(onClick = onClick, role = Role.Button)
             .size(44.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -505,6 +504,7 @@ private fun DepositSheet(goal: GoalEntity, onClose: () -> Unit, vm: GoalsViewMod
     val scope = rememberCoroutineScope()
     val color = parseColor(goal.colorHex)
     val pct = if (goal.targetAmount > 0) ((goal.savedAmount / goal.targetAmount) * 100.0).coerceIn(0.0, 100.0) else 0.0
+    val jc = LocalJibetColors.current
 
     JibetSheet(onDismiss = onClose, title = "پس‌انداز برای «${goal.title}»") {
         Column(
@@ -526,9 +526,9 @@ private fun DepositSheet(goal: GoalEntity, onClose: () -> Unit, vm: GoalsViewMod
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("پس‌انداز شده: ", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = InkSoft))
-                        Text(Fmt.money(goal.savedAmount), style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 12.5.sp, color = Ink))
-                        Text(" تومان", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = InkSoft))
+                        Text("پس‌انداز شده: ", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = jc.inkSoft))
+                        Text(Fmt.money(goal.savedAmount), style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 12.5.sp, color = jc.ink))
+                        Text(" تومان", style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = jc.inkSoft))
                     }
                     Text(
                         Fmt.percent(pct),
@@ -540,7 +540,7 @@ private fun DepositSheet(goal: GoalEntity, onClose: () -> Unit, vm: GoalsViewMod
                 }
                 Text(
                     "هدف: ${Fmt.money(goal.targetAmount)} تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = jc.inkSoft),
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
@@ -548,6 +548,12 @@ private fun DepositSheet(goal: GoalEntity, onClose: () -> Unit, vm: GoalsViewMod
             // مبلغ جدید
             AmountDisplayCard(label = "مبلغ پس‌انداز", amount = amount)
             JibetKeypad(value = amount, onChange = { amount = it })
+
+            // پول هدف‌ها یک پاکت مجازی است — جدا از موجودی حساب‌ها
+            Text(
+                "پس‌انداز هدف‌ها جدا از حساب‌ها محاسبه می‌شود",
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
+            )
 
             GradientSubmitButton(
                 text = if (saving) "در حال ثبت…" else "ثبت پس‌انداز",
@@ -595,6 +601,7 @@ private fun GoalForm(editing: GoalEntity?, onClose: () -> Unit, vm: GoalsViewMod
     var saving by remember { mutableStateOf(false) }
     var armed by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val jc = LocalJibetColors.current
 
     LaunchedEffect(armed) {
         if (armed) {
@@ -635,7 +642,7 @@ private fun GoalForm(editing: GoalEntity?, onClose: () -> Unit, vm: GoalsViewMod
                     if (Fmt.parseNumber(saved) > 0) {
                         Text(
                             "معادل: ${Fmt.money(Fmt.parseNumber(saved))} تومان",
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = InkSoft),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = jc.inkSoft),
                             modifier = Modifier.padding(top = 6.dp),
                         )
                     }
@@ -696,12 +703,12 @@ private fun GoalForm(editing: GoalEntity?, onClose: () -> Unit, vm: GoalsViewMod
                     Icon(
                         Icons.Rounded.CalendarMonth,
                         contentDescription = null,
-                        tint = InkSoft,
+                        tint = jc.inkSoft,
                         modifier = Modifier.size(13.dp),
                     )
                     Text(
                         "مهلت فعلی: تا ${Fmt.faDigits(deadline!!)}",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = jc.inkSoft),
                     )
                 }
             }
@@ -809,6 +816,7 @@ private fun GoalIconOption(iconName: String, color: Color, active: Boolean, onCl
 /** کارت نمایش مبلغ با برچسب — مثل کارت‌های وب با dir=ltr */
 @Composable
 private fun AmountDisplayCard(label: String, amount: String) {
+    val jc = LocalJibetColors.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -820,25 +828,25 @@ private fun AmountDisplayCard(label: String, amount: String) {
     ) {
         Text(
             label,
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
         )
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (amount.isEmpty()) {
                     Text(
                         "۰",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Faint),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = jc.faint),
                     )
                 } else {
                     Text(
                         Fmt.money(amount.toDoubleOrNull() ?: 0.0),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = jc.ink),
                     )
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.inkSoft),
                 )
             }
         }
@@ -853,10 +861,11 @@ private fun JibetTextInput(
     placeholder: String,
     maxLength: Int = 40,
 ) {
+    val jc = LocalJibetColors.current
     BasicTextField(
         value = value,
         onValueChange = { onValueChange(it.take(maxLength)) },
-        textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
+        textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.ink),
         cursorBrush = SolidColor(LocalJibetColors.current.accentA),
         modifier = Modifier.fillMaxWidth(),
         decorationBox = { inner ->
@@ -864,7 +873,7 @@ private fun JibetTextInput(
                 if (value.isEmpty()) {
                     Text(
                         placeholder,
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.faint),
                         maxLines = 1,
                     )
                 }
@@ -951,7 +960,7 @@ private fun TwoStepDeleteButton(armed: Boolean, label: String, armedLabel: Strin
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(if (armed) jc.expense else ExpenseSoft)
+            .background(if (armed) jc.expense else jc.expenseSoft)
             .pressableScale(onClick = onClick)
             .height(44.dp),
         horizontalArrangement = Arrangement.Center,

@@ -45,6 +45,26 @@ class FmtTest {
         assertEquals(0.0, Fmt.parseNumber("abc"), 0.0)
         assertEquals(0.0, Fmt.parseNumber("—"), 0.0)
         assertEquals(0.0, Fmt.parseNumber("   "), 0.0)
+        assertEquals(0.0, Fmt.parseNumber("."), 0.0)
+    }
+
+    @Test
+    fun `decimal and thousand separator heuristics`() {
+        // نقطه به‌عنوان اعشار — رفت‌وبرگشت مقادیر ذخیره‌شده سالم می‌ماند
+        assertEquals(12.5, Fmt.parseNumber("12.5"), 0.0)
+        assertEquals(1.5, Fmt.parseNumber("1.5"), 0.0)
+        // نقطه به‌عنوان جداکننده هزارگان (همه‌ی گروه‌ها ۳ رقمی)
+        assertEquals(1500.0, Fmt.parseNumber("1.500"), 0.0)
+        assertEquals(1500000.0, Fmt.parseNumber("1.500.000"), 0.0)
+        // اعشار فارسی
+        assertEquals(1.5, Fmt.parseNumber("۱٫۵"), 0.0)
+        // ترکیبی: کاما هزارگان + نقطه اعشار
+        assertEquals(1500.25, Fmt.parseNumber("1,500.25"), 0.0)
+        // نقطه‌های هزارگان + اعشار فارسی
+        assertEquals(1500.25, Fmt.parseNumber("1.500٫25"), 0.0)
+        // شکل‌های مرزی نباید کرش کنند
+        assertEquals(0.5, Fmt.parseNumber(".5"), 0.0)
+        assertEquals(5.0, Fmt.parseNumber("5."), 0.0)
     }
 
     /* ---------- money / faDigits / percent ---------- */

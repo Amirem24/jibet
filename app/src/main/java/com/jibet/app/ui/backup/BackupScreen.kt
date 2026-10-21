@@ -64,12 +64,7 @@ import com.jibet.app.data.restoreBackup
 import com.jibet.app.ui.components.ScreenHeader
 import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Expense
-import com.jibet.app.ui.theme.ExpenseSoft
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
-import com.jibet.app.ui.theme.TextMid
+import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -131,7 +126,11 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                         input.readBytes().toString(Charsets.UTF_8)
                     } ?: ""
                 }
-                repo.restoreBackup(text, settings)
+                repo.restoreBackup(
+                    text,
+                    settings,
+                    snapshotFile = java.io.File(context.filesDir, "jibet-auto-pre-restore.json"),
+                )
                 Toast.makeText(context, "بازیابی شد ✅", Toast.LENGTH_SHORT).show()
             } catch (e: IllegalArgumentException) {
                 // «فایل پشتیبان معتبر نیست» — از restoreBackup
@@ -152,6 +151,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 @Composable
 fun BackupScreen(onBack: () -> Unit) {
     val vm: BackupViewModel = viewModel()
+    val jc = LocalJibetColors.current
     val context = LocalContext.current
 
     val jsonSaver = rememberLauncherForActivityResult(
@@ -208,7 +208,7 @@ fun BackupScreen(onBack: () -> Unit) {
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(ExpenseSoft)
+                        .background(jc.expenseSoft)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -216,7 +216,7 @@ fun BackupScreen(onBack: () -> Unit) {
                     Icon(
                         Icons.Rounded.Warning,
                         contentDescription = null,
-                        tint = Expense,
+                        tint = jc.expense,
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
@@ -226,7 +226,7 @@ fun BackupScreen(onBack: () -> Unit) {
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.5.sp,
                             lineHeight = 20.sp,
-                            color = Expense,
+                            color = jc.expense,
                         ),
                     )
                 }
@@ -263,7 +263,7 @@ fun BackupScreen(onBack: () -> Unit) {
                     Text(
                         buildAnnotatedString {
                             append("جیبت کاملاً محلی است؛ داده‌ها فقط روی همین دستگاه می‌مانند. ")
-                            withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Ink)) {
+                            withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = jc.ink)) {
                                 append("هر ماه یک پشتیبان بگیر.")
                             }
                         },
@@ -272,7 +272,7 @@ fun BackupScreen(onBack: () -> Unit) {
                             fontWeight = FontWeight.Normal,
                             fontSize = 13.sp,
                             lineHeight = 24.sp,
-                            color = TextMid,
+                            color = jc.textMid,
                         ),
                         modifier = Modifier.weight(1f),
                     )
@@ -294,6 +294,7 @@ private fun ActionRow(
     iconSize: Dp,
     onClick: () -> Unit,
 ) {
+    val jc = LocalJibetColors.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -307,13 +308,13 @@ private fun ActionRow(
         Column(Modifier.weight(1f)) {
             Text(
                 title,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.5.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.5.sp, color = jc.ink),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 subtitle,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -321,7 +322,7 @@ private fun ActionRow(
         Icon(
             Icons.Rounded.ChevronLeft,
             contentDescription = null,
-            tint = Faint,
+            tint = jc.faint,
             modifier = Modifier.size(18.dp),
         )
     }

@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,14 +73,7 @@ import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Divider
-import com.jibet.app.ui.theme.ExpenseSoft
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.IncomeSoft
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
 import com.jibet.app.util.JDate
@@ -190,6 +184,7 @@ fun HomeScreen(onPush: (String) -> Unit, onTab: (String) -> Unit) {
 
 @Composable
 private fun Header(onTab: (String) -> Unit, onPush: (String) -> Unit) {
+    val jc = LocalJibetColors.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -200,11 +195,11 @@ private fun Header(onTab: (String) -> Unit, onPush: (String) -> Unit) {
         Column {
             Text(
                 "جیبت",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, lineHeight = 32.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, lineHeight = 32.sp, color = jc.ink),
             )
             Text(
                 "خلاصه‌ی امروز",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
@@ -216,7 +211,7 @@ private fun Header(onTab: (String) -> Unit, onPush: (String) -> Unit) {
                 Icon(
                     Icons.Rounded.Search,
                     contentDescription = "جستجو",
-                    tint = TextMid,
+                    tint = jc.textMid,
                     modifier = Modifier.size(19.dp),
                 )
             }
@@ -224,7 +219,7 @@ private fun Header(onTab: (String) -> Unit, onPush: (String) -> Unit) {
                 Icon(
                     Icons.Rounded.BarChart,
                     contentDescription = "گزارش‌ها",
-                    tint = TextMid,
+                    tint = jc.textMid,
                     modifier = Modifier.size(19.dp),
                 )
             }
@@ -325,6 +320,7 @@ private fun BalanceCard(totalBalance: Double) {
 
 @Composable
 private fun AccountsCard(accounts: List<AccountRow>, onOpen: () -> Unit) {
+    val jc = LocalJibetColors.current
     Column(Modifier.jibetCard().padding(8.dp)) {
         Row(
             Modifier
@@ -336,12 +332,12 @@ private fun AccountsCard(accounts: List<AccountRow>, onOpen: () -> Unit) {
         ) {
             Text(
                 "حساب‌ها",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
             )
             Icon(
                 Icons.Rounded.ChevronLeft,
                 contentDescription = null,
-                tint = Faint,
+                tint = jc.faint,
                 modifier = Modifier.size(17.dp),
             )
         }
@@ -351,7 +347,7 @@ private fun AccountsCard(accounts: List<AccountRow>, onOpen: () -> Unit) {
                     Modifier
                         .fillMaxWidth()
                         .height(1.dp)
-                        .background(Divider)
+                        .background(jc.divider)
                 )
             }
             Row(
@@ -365,7 +361,7 @@ private fun AccountsCard(accounts: List<AccountRow>, onOpen: () -> Unit) {
                 IconBubble(icon = a.icon, color = parseColor(a.colorHex))
                 Text(
                     a.name,
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -377,14 +373,14 @@ private fun AccountsCard(accounts: List<AccountRow>, onOpen: () -> Unit) {
                             fontFamily = Vazir,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.5.sp,
-                            color = Ink,
+                            color = jc.ink,
                             fontFeatureSettings = "tnum",
                         ),
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         "تومان",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = jc.inkSoft),
                     )
                 }
             }
@@ -396,6 +392,7 @@ private fun AccountsCard(accounts: List<AccountRow>, onOpen: () -> Unit) {
 
 @Composable
 private fun TodayCard(summary: Summary) {
+    val jc = LocalJibetColors.current
     Column(Modifier.jibetCard().padding(16.dp)) {
         Row(
             Modifier
@@ -406,11 +403,11 @@ private fun TodayCard(summary: Summary) {
         ) {
             Text(
                 "امروز",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
             )
             Text(
                 Fmt.faDigits(JDate.formatJalaliDate(System.currentTimeMillis(), JDate.Style.SHORT)),
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = Faint),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = jc.faint),
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -431,7 +428,7 @@ private fun TodayCard(summary: Summary) {
         ) {
             Text(
                 "این ماه",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -449,7 +446,7 @@ private fun DayStat(kind: Kind, amount: Double, modifier: Modifier = Modifier) {
     val jc = LocalJibetColors.current
     val isIncome = kind == Kind.INCOME
     val color = if (isIncome) jc.income else jc.expense
-    val soft = if (isIncome) IncomeSoft else ExpenseSoft
+    val soft = if (isIncome) jc.incomeSoft else jc.expenseSoft
     Row(
         modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -472,7 +469,7 @@ private fun DayStat(kind: Kind, amount: Double, modifier: Modifier = Modifier) {
         Column {
             Text(
                 if (isIncome) "درآمد" else "هزینه",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = jc.inkSoft),
             )
             Row(Modifier.padding(top = 2.dp)) {
                 Text(
@@ -484,7 +481,7 @@ private fun DayStat(kind: Kind, amount: Double, modifier: Modifier = Modifier) {
                 Spacer(Modifier.width(4.dp))
                 Text(
                     "تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = jc.inkSoft),
                     modifier = Modifier.alignByBaseline(),
                 )
             }
@@ -523,7 +520,7 @@ private fun QuickActions(onTab: (String) -> Unit, onPush: (String) -> Unit) {
             label = "هزینه",
             icon = Icons.Rounded.Remove,
             color = jc.expense,
-            bg = ExpenseSoft,
+            bg = jc.expenseSoft,
             onTap = { UiBus.openAdd(Kind.EXPENSE) },
             modifier = Modifier.weight(1f),
         )
@@ -531,7 +528,7 @@ private fun QuickActions(onTab: (String) -> Unit, onPush: (String) -> Unit) {
             label = "درآمد",
             icon = Icons.Rounded.Add,
             color = jc.income,
-            bg = IncomeSoft,
+            bg = jc.incomeSoft,
             onTap = { UiBus.openAdd(Kind.INCOME) },
             modifier = Modifier.weight(1f),
         )
@@ -566,7 +563,7 @@ private fun QuickAction(
     Column(
         modifier
             .jibetGlass(shape = RoundedCornerShape(20.dp))
-            .pressableScale(onClick = onTap, pressedScale = 0.94f)
+            .pressableScale(onClick = onTap, pressedScale = 0.94f, role = Role.Button)
             .height(56.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -608,7 +605,7 @@ private fun RecentCard(recent: List<TxRow>?, onTab: (String) -> Unit) {
         ) {
             Text(
                 "آخرین تراکنش‌ها",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = jc.ink),
             )
             Row(
                 Modifier.pressableScale(onClick = { onTab("transactions") }),
@@ -678,7 +675,7 @@ private fun RecentCard(recent: List<TxRow>?, onTab: (String) -> Unit) {
                                 Modifier
                                     .fillMaxWidth()
                                     .height(1.dp)
-                                    .background(Divider)
+                                    .background(jc.divider)
                             )
                         }
                         // ورود پله‌ای ردیف‌ها — ۳۰ms فاصله مثل staggerChildren وب
@@ -698,13 +695,13 @@ private fun RecentCard(recent: List<TxRow>?, onTab: (String) -> Unit) {
                                 Column(Modifier.weight(1f)) {
                                     Text(
                                         tx.title,
-                                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                     Text(
                                         "${tx.accName ?: "حساب"} · ${Fmt.faDigits(JDate.formatJalaliDate(tx.date, JDate.Style.SHORT))}",
-                                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
@@ -724,9 +721,10 @@ private fun RecentCard(recent: List<TxRow>?, onTab: (String) -> Unit) {
     }
 }
 
-/** اسکلتون بارگذاری — ۳ ردیف با حباب و میله‌های #F1F3F9 */
+/** اسکلتون بارگذاری — ۳ ردیف با حباب و میله‌های اسکلت */
 @Composable
 private fun RecentSkeleton() {
+    val jc = LocalJibetColors.current
     Column(
         Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -743,7 +741,7 @@ private fun RecentSkeleton() {
                     Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(Divider)
+                        .background(jc.skeleton)
                 )
                 Column(
                     Modifier.weight(1f),
@@ -754,14 +752,14 @@ private fun RecentSkeleton() {
                             .width(112.dp)
                             .height(12.dp)
                             .clip(CircleShape)
-                            .background(Divider)
+                            .background(jc.skeleton)
                     )
                     Box(
                         Modifier
                             .width(80.dp)
                             .height(10.dp)
                             .clip(CircleShape)
-                            .background(Divider)
+                            .background(jc.skeleton)
                     )
                 }
                 Box(
@@ -769,7 +767,7 @@ private fun RecentSkeleton() {
                         .width(64.dp)
                         .height(12.dp)
                         .clip(CircleShape)
-                        .background(Divider)
+                        .background(jc.skeleton)
                 )
             }
         }

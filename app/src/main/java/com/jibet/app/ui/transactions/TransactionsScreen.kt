@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Tune
@@ -73,9 +74,7 @@ import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Ink
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -218,7 +217,7 @@ fun TransactionsScreen(onPush: (String) -> Unit) {
                     Icon(
                         Icons.Rounded.Tune,
                         contentDescription = "جستجو و فیلتر",
-                        tint = TextMid,
+                        tint = jc.textMid,
                         modifier = Modifier.size(19.dp),
                     )
                 }
@@ -234,7 +233,8 @@ fun TransactionsScreen(onPush: (String) -> Unit) {
             modifier = Modifier.padding(bottom = 12.dp),
         )
 
-        // چیپ‌های نوع
+        // چیپ‌های نوع — اگر هر فیلتری فعال باشد، «پاک کردن فیلترها» هم نمایش داده می‌شود
+        val filtersActive = qInput.isNotEmpty() || kind != null || accountId != 0L
         Row(
             Modifier
                 .fillMaxWidth()
@@ -256,6 +256,19 @@ fun TransactionsScreen(onPush: (String) -> Unit) {
                 color = jc.income,
                 onClick = { vm.kind.value = Kind.INCOME },
             )
+            if (filtersActive) {
+                JibetChip(
+                    label = "پاک کردن فیلترها",
+                    active = false,
+                    onClick = {
+                        vm.qInput.value = ""
+                        vm.kind.value = null
+                        vm.accountId.value = 0L
+                        vm.offset.value = 0
+                    },
+                    leadingIcon = Icons.Rounded.Close,
+                )
+            }
         }
 
         // چیپ‌های حساب
@@ -316,19 +329,19 @@ fun TransactionsScreen(onPush: (String) -> Unit) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp,
-                                color = TextMid,
+                                color = jc.textMid,
                             )
                         } else {
                             Icon(
                                 Icons.Rounded.KeyboardArrowDown,
                                 contentDescription = null,
-                                tint = TextMid,
+                                tint = jc.textMid,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
                         Text(
                             if (loadingMore) "در حال بارگذاری…" else "نمایش بیشتر",
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = TextMid),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = jc.textMid),
                         )
                     }
                 }
@@ -348,6 +361,7 @@ private fun SearchField(
     modifier: Modifier = Modifier,
     a11yLabel: String,
 ) {
+    val jc = LocalJibetColors.current
     Box(
         modifier
             .fillMaxWidth()
@@ -357,7 +371,7 @@ private fun SearchField(
         Icon(
             Icons.Rounded.Search,
             contentDescription = null,
-            tint = Color(0xFFA7AEC0),
+            tint = jc.iconMuted,
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .padding(start = 16.dp)
@@ -367,8 +381,8 @@ private fun SearchField(
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
-            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = Ink),
-            cursorBrush = SolidColor(Ink),
+            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = jc.ink),
+            cursorBrush = SolidColor(jc.ink),
             modifier = Modifier
                 .fillMaxSize()
                 .semantics { contentDescription = a11yLabel }
@@ -378,7 +392,7 @@ private fun SearchField(
                     if (value.isEmpty()) {
                         Text(
                             placeholder,
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = Color(0xFFA7AEC0)),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = jc.iconMuted),
                             maxLines = 1,
                         )
                     }
@@ -420,6 +434,7 @@ private fun PulsingBox(
 /** اسکلتون بارگذاری اولیه — مثل SkeletonList وب (۵ ردیف) */
 @Composable
 private fun SkeletonList() {
+    val jc = LocalJibetColors.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         repeat(5) {
             Row(
@@ -430,15 +445,15 @@ private fun SkeletonList() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                PulsingBox(width = 40.dp, height = 40.dp, color = Color(0xFFE4E8F4), shape = CircleShape)
+                PulsingBox(width = 40.dp, height = 40.dp, color = jc.skeleton, shape = CircleShape)
                 Column(
                     Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    PulsingBox(width = 112.dp, height = 12.dp, color = Color(0xFFE4E8F4))
-                    PulsingBox(width = 64.dp, height = 10.dp, color = Color(0xFFECEFF7))
+                    PulsingBox(width = 112.dp, height = 12.dp, color = jc.skeleton)
+                    PulsingBox(width = 64.dp, height = 10.dp, color = jc.skeleton)
                 }
-                PulsingBox(width = 64.dp, height = 12.dp, color = Color(0xFFE4E8F4))
+                PulsingBox(width = 64.dp, height = 12.dp, color = jc.skeleton)
             }
         }
     }

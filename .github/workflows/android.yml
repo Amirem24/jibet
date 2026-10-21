@@ -1,4 +1,4 @@
-name: Build APK
+name: Build & Release APK
 
 on:
   push:
@@ -33,31 +33,47 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+      - name: Decode release keystore
+        run: |
+          echo "$JB_KEYSTORE_B64" | base64 -d > /tmp/jibet-release.jks
+          echo "JB_KEYSTORE_PATH=/tmp/jibet-release.jks" >> "$GITHUB_ENV"
+          echo "JB_STORE_PASSWORD=$JB_STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "JB_KEY_ALIAS=$JB_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "JB_KEY_PASSWORD=$JB_KEY_PASSWORD" >> "$GITHUB_ENV"
+        env:
+          JB_KEYSTORE_B64: ${{ secrets.JB_KEYSTORE_B64 }}
+          JB_STORE_PASSWORD: ${{ secrets.JB_STORE_PASSWORD }}
+          JB_KEY_ALIAS: ${{ secrets.JB_KEY_ALIAS }}
+          JB_KEY_PASSWORD: ${{ secrets.JB_KEY_PASSWORD }}
+
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      # versionCode همیشه یکتا و صعودی: ۱۰۰ + شماره‌ی ران CI
+      # نسخه‌ی نمایشی (versionName) از فایل gradle خوانده می‌شود
+      - name: Build signed release APK
+        run: >
+          gradle :app:assembleRelease --stacktrace
+          -PjibetVersionCode=$((100 + GITHUB_RUN_NUMBER))
+
+      - name: Verify signature
+        run: |
+          APKS=$ANDROID_HOME/build-tools/35.0.0/apksigner
+          $APKS verify --print-certs app/build/outputs/apk/release/app-release.apk | head -4
 
       - name: Prepare APK
         run: |
-          mkdir -p apk
-          cp app/build/outputs/apk/debug/app-debug.apk apk/Jibet-debug.apk
-
-      - name: Commit APK to repository
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apk/Jibet-debug.apk
-          if git diff --cached --quiet; then
-            echo "No APK changes to commit"
-          else
-            git commit -m "build: توزیع خودکار APK [skip ci]"
-            git push
-          fi
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk dist/Jibet.apk
 
       - name: Create Release and upload APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: "آخرین نسخه — Jibet"
-          body: "فایل APK را دانلود و نصب کنید. برای نصب، اجازه نصب از منابع ناشناس را در تنظیمات فعال کنید."
-          files: apk/Jibet-debug.apk
+          body: |
+            نصب: فایل APK را دانلود و نصب کنید. برای نصب، اجازه نصب از منابع ناشناس را در تنظیمات فعال کنید.
+
+            به‌روزرسانی: امضای این نسخه پایدار است — نصب نسخه جدید روی نسخه قبلی بدون حذف اپ و بدون از دست رفتن داده‌ها انجام می‌شود.
+          files: dist/Jibet.apk
           make_latest: true

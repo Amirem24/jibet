@@ -74,10 +74,6 @@ import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.jibetInputShape
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Expense
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.CATEGORY_COLORS
@@ -288,7 +284,7 @@ fun CategoriesScreen(onBack: () -> Unit) {
                             IconBubble(icon = c.icon, color = parseColor(c.colorHex))
                             Text(
                                 c.name,
-                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f),
@@ -296,7 +292,7 @@ fun CategoriesScreen(onBack: () -> Unit) {
                             Icon(
                                 Icons.Rounded.ChevronLeft,
                                 contentDescription = null,
-                                tint = Faint,
+                                tint = jc.faint,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -376,6 +372,7 @@ private fun CategorySheet(vm: CategoriesViewModel) {
 /** ورودی متنی استاندارد — مثل inputClass وب */
 @Composable
 private fun NameInput(value: String, onChange: (String) -> Unit, placeholder: String, accent: Color) {
+    val jc = LocalJibetColors.current
     Box(
         Modifier
             .fillMaxWidth()
@@ -387,14 +384,14 @@ private fun NameInput(value: String, onChange: (String) -> Unit, placeholder: St
         if (value.isEmpty()) {
             Text(
                 placeholder,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.faint),
             )
         }
         BasicTextField(
             value = value,
             onValueChange = onChange,
             singleLine = true,
-            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
+            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.ink),
             cursorBrush = SolidColor(accent),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -404,13 +401,14 @@ private fun NameInput(value: String, onChange: (String) -> Unit, placeholder: St
 /** دایره‌ی رنگ — فعال با حلقه‌ی ۲dp جوهری + فاصله‌ی ۲dp سفید (ring-offset وب) */
 @Composable
 private fun ColorSwatch(hex: String, selected: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     Box(
         Modifier
             .pressableScale(onClick = onClick, pressedScale = 0.92f)
             .size(if (selected) 48.dp else 44.dp)
             .clip(CircleShape)
-            .then(if (selected) Modifier.background(Color.White) else Modifier)
-            .then(if (selected) Modifier.border(2.dp, Ink.copy(alpha = 0.3f), CircleShape) else Modifier)
+            .then(if (selected) Modifier.background(jc.card) else Modifier)
+            .then(if (selected) Modifier.border(2.dp, jc.ink.copy(alpha = 0.3f), CircleShape) else Modifier)
             .padding(if (selected) 2.dp else 0.dp)
             .clip(CircleShape)
             .background(parseColor(hex)),
@@ -420,6 +418,7 @@ private fun ColorSwatch(hex: String, selected: Boolean, onClick: () -> Unit) {
 /** کاشی آیکون ۵۲dp — فعال با پس‌زمینه‌ی رنگ انتخابی */
 @Composable
 private fun IconTile(icon: String, colorHex: String, active: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     val color = parseColor(colorHex)
     val shape = RoundedCornerShape(16.dp)
     Box(
@@ -434,7 +433,7 @@ private fun IconTile(icon: String, colorHex: String, active: Boolean, onClick: (
             )
             .size(52.dp)
             .clip(shape)
-            .background(if (active) color else Color.White.copy(alpha = 0.85f)),
+            .background(if (active) color else jc.inputBg),
         contentAlignment = Alignment.Center,
     ) {
         IconBubble(icon = icon, color = if (active) Color.White else color, size = 40.dp)
@@ -444,6 +443,7 @@ private fun IconTile(icon: String, colorHex: String, active: Boolean, onClick: (
 /** دکمه‌ی حذف دومرحله‌ای — مثل دکمه‌ی حذف وب */
 @Composable
 private fun DeleteButton(label: String, armed: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     val shape = RoundedCornerShape(16.dp)
     Box(
         Modifier
@@ -453,11 +453,11 @@ private fun DeleteButton(label: String, armed: Boolean, onClick: () -> Unit) {
                     Modifier
                         .shadow(10.dp, shape, spotColor = Color(0x8CF26D6D), ambientColor = Color.Transparent)
                         .clip(shape)
-                        .background(Brush.linearGradient(listOf(Color(0xFFF28080), Expense)))
+                        .background(Brush.linearGradient(listOf(Color(0xFFF28080), jc.expense)))
                 } else {
                     Modifier
                         .clip(shape)
-                        .background(Expense.copy(alpha = 0.10f))
+                        .background(jc.expense.copy(alpha = 0.10f))
                 },
             )
             .pressableScale(onClick = onClick)
@@ -468,7 +468,7 @@ private fun DeleteButton(label: String, armed: Boolean, onClick: () -> Unit) {
             Icon(
                 Icons.Rounded.Delete,
                 contentDescription = null,
-                tint = if (armed) Color.White else Expense,
+                tint = if (armed) Color.White else jc.expense,
                 modifier = Modifier.size(16.dp),
             )
             Spacer(Modifier.width(8.dp))
@@ -478,7 +478,7 @@ private fun DeleteButton(label: String, armed: Boolean, onClick: () -> Unit) {
                     fontFamily = Vazir,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.5.sp,
-                    color = if (armed) Color.White else Expense,
+                    color = if (armed) Color.White else jc.expense,
                 ),
             )
         }

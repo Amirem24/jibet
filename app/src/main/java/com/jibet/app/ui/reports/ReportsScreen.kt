@@ -54,7 +54,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -66,6 +65,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -87,12 +87,7 @@ import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.ExpenseSoft
-import com.jibet.app.ui.theme.IncomeSoft
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
 import com.jibet.app.util.JDate
@@ -244,7 +239,7 @@ fun ReportsScreen(onBack: () -> Unit) {
                 ) { text ->
                     Text(
                         text,
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = jc.ink),
                         maxLines = 1,
                     )
                 }
@@ -336,6 +331,7 @@ private fun Donut(
     total: Double,
     kind: Kind,
 ) {
+    val jc = LocalJibetColors.current
     // هندسه‌ی دونات مثل وب: circle با r=54 و strokeWidth=22 در بوم ۱۴۰×۱۴۰
     val circumference = 2f * PI.toFloat() * 54f
     val minSliceDeg = 360f / circumference // ۱ واحد SVG ≈ ۱٫۰۶ درجه
@@ -381,7 +377,7 @@ private fun Donut(
             val arcSize = Size(radius * 2f, radius * 2f)
             // خط راهنما — rgba(138,146,166,0.10)
             drawCircle(
-                color = Color(0x1A8A92A6),
+                color = jc.track,
                 radius = radius,
                 center = center,
                 style = Stroke(width = stroke),
@@ -410,15 +406,15 @@ private fun Donut(
         ) {
             Text(
                 "مجموع ${if (kind == Kind.EXPENSE) "هزینه‌ها" else "درآمدها"}",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.5.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.5.sp, color = jc.inkSoft),
             )
             Text(
                 Fmt.money(total),
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 19.sp, lineHeight = 24.sp, color = Ink, fontFeatureSettings = "tnum"),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 19.sp, lineHeight = 24.sp, color = jc.ink, fontFeatureSettings = "tnum"),
             )
             Text(
                 "تومان",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = jc.inkSoft),
             )
         }
     }
@@ -427,12 +423,13 @@ private fun Donut(
 /** راهنمای دسته‌ها زیر دونات */
 @Composable
 private fun CategoryLegend(categories: List<ReportCategory>) {
+    val jc = LocalJibetColors.current
     Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
         Box(
             Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color(0xFFEEF1F8)),
+                .background(jc.divider),
         )
         Spacer(Modifier.height(12.dp))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -458,18 +455,18 @@ private fun CategoryLegend(categories: List<ReportCategory>) {
                     )
                     Text(
                         category.name,
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = jc.ink),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
                     Text(
                         Fmt.money(category.total),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = Ink, fontFeatureSettings = "tnum"),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = jc.ink, fontFeatureSettings = "tnum"),
                     )
                     Text(
                         Fmt.percent(category.pct.toDouble()),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = InkSoft, fontFeatureSettings = "tnum"),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = jc.inkSoft, fontFeatureSettings = "tnum"),
                         textAlign = TextAlign.End,
                         modifier = Modifier.width(44.dp),
                     )
@@ -513,11 +510,11 @@ private fun TrendCard(
             ) {
                 Text(
                     "روند ${if (kind == Kind.EXPENSE) "هزینه" else "درآمد"}",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = jc.ink),
                 )
                 Text(
                     label,
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = jc.inkSoft),
                 )
             }
             Row(
@@ -564,7 +561,7 @@ private fun TrendCard(
                         ) {
                             Text(
                                 labelFor(index).ifEmpty { "\u200C" },
-                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 9.sp, lineHeight = 12.sp, color = InkSoft),
+                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 9.sp, lineHeight = 12.sp, color = jc.inkSoft),
                                 maxLines = 1,
                             )
                         }
@@ -599,7 +596,7 @@ private fun SummaryCard(totalIncome: Double, totalExpense: Double) {
                 Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(IncomeSoft),
+                    .background(jc.incomeSoft),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -612,12 +609,12 @@ private fun SummaryCard(totalIncome: Double, totalExpense: Double) {
             Column(Modifier.weight(1f)) {
                 Text(
                     "درآمد دوره",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = jc.inkSoft),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         Fmt.money(totalIncome),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.5.sp, color = Ink, fontFeatureSettings = "tnum"),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.5.sp, color = jc.ink, fontFeatureSettings = "tnum"),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
@@ -625,7 +622,7 @@ private fun SummaryCard(totalIncome: Double, totalExpense: Double) {
                     Spacer(Modifier.width(4.dp))
                     Text(
                         "تومان",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 10.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 10.sp, color = jc.inkSoft),
                     )
                 }
             }
@@ -634,7 +631,7 @@ private fun SummaryCard(totalIncome: Double, totalExpense: Double) {
             Modifier
                 .width(1.dp)
                 .fillMaxHeight()
-                .background(Color(0xFFEDF0F8)),
+                .background(jc.divider),
         )
         // هزینه دوره
         Row(
@@ -648,7 +645,7 @@ private fun SummaryCard(totalIncome: Double, totalExpense: Double) {
                 Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(ExpenseSoft),
+                    .background(jc.expenseSoft),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -661,12 +658,12 @@ private fun SummaryCard(totalIncome: Double, totalExpense: Double) {
             Column(Modifier.weight(1f)) {
                 Text(
                     "هزینه دوره",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = jc.inkSoft),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         Fmt.money(totalExpense),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.5.sp, color = Ink, fontFeatureSettings = "tnum"),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.5.sp, color = jc.ink, fontFeatureSettings = "tnum"),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
@@ -674,7 +671,7 @@ private fun SummaryCard(totalIncome: Double, totalExpense: Double) {
                     Spacer(Modifier.width(4.dp))
                     Text(
                         "تومان",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 10.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 10.sp, color = jc.inkSoft),
                     )
                 }
             }
@@ -691,19 +688,20 @@ private fun NavCircleButton(
     desc: String,
     onClick: () -> Unit,
 ) {
+    val jc = LocalJibetColors.current
     Box(
         Modifier
             .shadow(2.dp, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White.copy(alpha = 0.8f))
-            .pressableScale(onClick = onClick, pressedScale = 0.95f)
+            .background(jc.cardSoft)
+            .pressableScale(onClick = onClick, pressedScale = 0.95f, role = Role.Button)
             .size(36.dp),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             icon,
             contentDescription = desc,
-            tint = TextMid,
+            tint = jc.textMid,
             modifier = Modifier.size(18.dp),
         )
     }
@@ -715,6 +713,7 @@ private fun ShimmerCard(
     height: Dp,
     modifier: Modifier = Modifier,
 ) {
+    val jc = LocalJibetColors.current
     val transition = rememberInfiniteTransition(label = "shimmer")
     val alpha by transition.animateFloat(
         initialValue = 0.4f,
@@ -726,7 +725,7 @@ private fun ShimmerCard(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color(0xFFEEF1F8).copy(alpha = alpha)),
+                .background(jc.skeleton.copy(alpha = alpha)),
         )
     }
 }

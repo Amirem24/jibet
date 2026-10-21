@@ -62,10 +62,7 @@ import com.jibet.app.ui.components.groupTxsByDay
 import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
 import com.jibet.app.util.JDate
@@ -288,14 +285,14 @@ fun SearchScreen(onBack: () -> Unit) {
         ) {
             Text(
                 "بازه زمانی",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = TextMid),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = jc.textMid),
                 modifier = Modifier.alignByBaseline(),
             )
             if (range.first != 0L) {
                 Text(
                     "${Fmt.faDigits(JDate.formatJalaliDate(range.first, JDate.Style.SHORT))} تا " +
                         Fmt.faDigits(JDate.formatJalaliDate(range.second, JDate.Style.SHORT)),
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = jc.inkSoft),
                     modifier = Modifier.alignByBaseline(),
                 )
             }
@@ -333,7 +330,7 @@ fun SearchScreen(onBack: () -> Unit) {
             ) {
                 Text(
                     "پاک کردن",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextMid),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.textMid),
                 )
             }
             AccentButton(
@@ -379,12 +376,12 @@ fun SearchScreen(onBack: () -> Unit) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(17.dp),
                         strokeWidth = 2.dp,
-                        color = InkSoft,
+                        color = jc.inkSoft,
                     )
                     Box(Modifier.width(8.dp))
                     Text(
                         "در حال جستجو…",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
                     )
                 }
             } else {
@@ -407,7 +404,7 @@ fun SearchScreen(onBack: () -> Unit) {
                         if (res.total > res.items.size) {
                             Text(
                                 "${Fmt.faDigits(res.items.size)} مورد از ${Fmt.faDigits(res.total)} مورد نمایش داده شد — فیلتر را محدودتر کن.",
-                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = InkSoft),
+                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = jc.inkSoft),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -432,6 +429,7 @@ private fun SearchField(
     modifier: Modifier = Modifier,
     a11yLabel: String,
 ) {
+    val jc = LocalJibetColors.current
     Box(
         modifier
             .fillMaxWidth()
@@ -441,7 +439,7 @@ private fun SearchField(
         Icon(
             Icons.Rounded.Search,
             contentDescription = null,
-            tint = Color(0xFFA7AEC0),
+            tint = jc.iconMuted,
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .padding(start = 16.dp)
@@ -451,8 +449,8 @@ private fun SearchField(
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
-            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = Ink),
-            cursorBrush = SolidColor(Ink),
+            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = jc.ink),
+            cursorBrush = SolidColor(jc.ink),
             modifier = Modifier
                 .fillMaxSize()
                 .semantics { contentDescription = a11yLabel }
@@ -462,7 +460,7 @@ private fun SearchField(
                     if (value.isEmpty()) {
                         Text(
                             placeholder,
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = Color(0xFFA7AEC0)),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = jc.iconMuted),
                             maxLines = 1,
                         )
                     }
@@ -476,9 +474,10 @@ private fun SearchField(
 /** تیتر بخش فیلتر — مثل p.mb-2.px-1 وب */
 @Composable
 private fun FilterSectionLabel(text: String) {
+    val jc = LocalJibetColors.current
     Text(
         text,
-        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = TextMid),
+        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = jc.textMid),
         modifier = Modifier
             .padding(horizontal = 4.dp)
             .padding(bottom = 8.dp),

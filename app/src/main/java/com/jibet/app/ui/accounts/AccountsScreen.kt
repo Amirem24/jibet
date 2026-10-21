@@ -82,13 +82,8 @@ import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.jibetInputShape
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Expense
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.JibetColors
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.ACCOUNT_ICONS
 import com.jibet.app.util.ACCOUNT_KIND_LABELS
@@ -267,7 +262,7 @@ fun AccountsScreen(onBack: () -> Unit) {
                     Icon(
                         Icons.Rounded.Add,
                         contentDescription = "افزودن حساب",
-                        tint = TextMid,
+                        tint = jc.textMid,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -284,18 +279,18 @@ fun AccountsScreen(onBack: () -> Unit) {
             ) {
                 Text(
                     "مجموع موجودی",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
                 )
                 Row(Modifier.padding(top = 4.dp)) {
                     Text(
                         Fmt.money(total),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 26.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 26.sp, color = jc.ink),
                         modifier = Modifier.alignByBaseline(),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "تومان",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.inkSoft),
                         modifier = Modifier.alignByBaseline(),
                     )
                 }
@@ -333,13 +328,13 @@ fun AccountsScreen(onBack: () -> Unit) {
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     a.name,
-                                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
                                     ACCOUNT_KIND_LABELS[a.kind.name] ?: "",
-                                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -351,19 +346,19 @@ fun AccountsScreen(onBack: () -> Unit) {
                                         fontFamily = Vazir,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp,
-                                        color = if (a.balance < 0) jc.expense else Ink,
+                                        color = if (a.balance < 0) jc.expense else jc.ink,
                                     ),
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
                                     "تومان",
-                                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.5.sp, color = InkSoft),
+                                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 10.5.sp, color = jc.inkSoft),
                                 )
                                 Spacer(Modifier.width(2.dp))
                                 Icon(
                                     Icons.Rounded.ChevronLeft,
                                     contentDescription = null,
-                                    tint = Faint,
+                                    tint = jc.faint,
                                     modifier = Modifier.size(18.dp),
                                 )
                             }
@@ -408,7 +403,7 @@ private fun AccountSheet(vm: AccountsViewModel, jc: JibetColors) {
                 BalanceInput(value = vm.balanceDisplay, onChange = vm::setBalance, accent = jc.accentA)
                 Text(
                     Fmt.money(Fmt.parseNumber(vm.balanceDisplay)) + " تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 11.5.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 11.5.sp, color = jc.inkSoft),
                     modifier = Modifier.padding(top = 6.dp, start = 4.dp, end = 4.dp),
                 )
             }
@@ -455,6 +450,7 @@ private fun AccountSheet(vm: AccountsViewModel, jc: JibetColors) {
 /** ورودی متنی استاندارد — مثل inputClass وب */
 @Composable
 private fun NameInput(value: String, onChange: (String) -> Unit, placeholder: String, accent: Color) {
+    val jc = LocalJibetColors.current
     Box(
         Modifier
             .fillMaxWidth()
@@ -466,14 +462,14 @@ private fun NameInput(value: String, onChange: (String) -> Unit, placeholder: St
         if (value.isEmpty()) {
             Text(
                 placeholder,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.faint),
             )
         }
         BasicTextField(
             value = value,
             onValueChange = onChange,
             singleLine = true,
-            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
+            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.ink),
             cursorBrush = SolidColor(accent),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -509,7 +505,7 @@ private fun KindChips(selected: AccountKind, onSelect: (AccountKind) -> Unit, jc
                             Modifier
                                 .shadow(2.dp, shape, spotColor = Color(0x1A5B74E9), ambientColor = Color.Transparent)
                                 .clip(shape)
-                                .background(Color.White.copy(alpha = 0.85f))
+                                .background(jc.inputBg)
                         },
                     )
                     .pressableScale(onClick = { onSelect(k) }, pressedScale = 0.96f)
@@ -523,7 +519,7 @@ private fun KindChips(selected: AccountKind, onSelect: (AccountKind) -> Unit, jc
                         fontFamily = Vazir,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        color = if (active) Color.White else TextMid,
+                        color = if (active) Color.White else jc.textMid,
                     ),
                 )
             }
@@ -534,13 +530,14 @@ private fun KindChips(selected: AccountKind, onSelect: (AccountKind) -> Unit, jc
 /** دایره‌ی رنگ — فعال با حلقه‌ی ۲dp جوهری + فاصله‌ی ۲dp سفید (ring-offset وب) */
 @Composable
 private fun ColorSwatch(hex: String, selected: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     Box(
         Modifier
             .pressableScale(onClick = onClick, pressedScale = 0.92f)
             .size(if (selected) 48.dp else 44.dp)
             .clip(CircleShape)
-            .then(if (selected) Modifier.background(Color.White) else Modifier)
-            .then(if (selected) Modifier.border(2.dp, Ink.copy(alpha = 0.3f), CircleShape) else Modifier)
+            .then(if (selected) Modifier.background(jc.card) else Modifier)
+            .then(if (selected) Modifier.border(2.dp, jc.ink.copy(alpha = 0.3f), CircleShape) else Modifier)
             .padding(if (selected) 2.dp else 0.dp)
             .clip(CircleShape)
             .background(parseColor(hex)),
@@ -550,6 +547,7 @@ private fun ColorSwatch(hex: String, selected: Boolean, onClick: () -> Unit) {
 /** کاشی آیکون ۵۲dp — فعال با پس‌زمینه‌ی رنگ انتخابی */
 @Composable
 private fun IconTile(icon: String, colorHex: String, active: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     val color = parseColor(colorHex)
     val shape = RoundedCornerShape(16.dp)
     Box(
@@ -564,7 +562,7 @@ private fun IconTile(icon: String, colorHex: String, active: Boolean, onClick: (
             )
             .size(52.dp)
             .clip(shape)
-            .background(if (active) color else Color.White.copy(alpha = 0.85f)),
+            .background(if (active) color else jc.inputBg),
         contentAlignment = Alignment.Center,
     ) {
         IconBubble(icon = icon, color = if (active) Color.White else color, size = 40.dp)
@@ -574,6 +572,7 @@ private fun IconTile(icon: String, colorHex: String, active: Boolean, onClick: (
 /** دکمه‌ی حذف دومرحله‌ای — مثل دکمه‌ی حذف وب */
 @Composable
 private fun DeleteButton(label: String, armed: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     val shape = RoundedCornerShape(16.dp)
     Box(
         Modifier
@@ -583,11 +582,11 @@ private fun DeleteButton(label: String, armed: Boolean, onClick: () -> Unit) {
                     Modifier
                         .shadow(10.dp, shape, spotColor = Color(0x8CF26D6D), ambientColor = Color.Transparent)
                         .clip(shape)
-                        .background(Brush.linearGradient(listOf(Color(0xFFF28080), Expense)))
+                        .background(Brush.linearGradient(listOf(Color(0xFFF28080), jc.expense)))
                 } else {
                     Modifier
                         .clip(shape)
-                        .background(Expense.copy(alpha = 0.10f))
+                        .background(jc.expense.copy(alpha = 0.10f))
                 },
             )
             .pressableScale(onClick = onClick)
@@ -598,7 +597,7 @@ private fun DeleteButton(label: String, armed: Boolean, onClick: () -> Unit) {
             Icon(
                 Icons.Rounded.Delete,
                 contentDescription = null,
-                tint = if (armed) Color.White else Expense,
+                tint = if (armed) Color.White else jc.expense,
                 modifier = Modifier.size(16.dp),
             )
             Spacer(Modifier.width(8.dp))
@@ -608,7 +607,7 @@ private fun DeleteButton(label: String, armed: Boolean, onClick: () -> Unit) {
                     fontFamily = Vazir,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.5.sp,
-                    color = if (armed) Color.White else Expense,
+                    color = if (armed) Color.White else jc.expense,
                 ),
             )
         }

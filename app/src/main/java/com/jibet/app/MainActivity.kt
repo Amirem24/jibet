@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +61,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.jibet.app.data.BootState
+import com.jibet.app.data.ThemeMode
 import com.jibet.app.ui.about.AboutScreen
 import com.jibet.app.ui.accounts.AccountsScreen
 import com.jibet.app.ui.backup.BackupScreen
@@ -78,16 +80,15 @@ import com.jibet.app.ui.reports.ReportsScreen
 import com.jibet.app.ui.search.SearchScreen
 import com.jibet.app.ui.sheets.AddTransactionSheet
 import com.jibet.app.ui.sheets.TransactionDetailSheet
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.JibetTheme
+import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.ui.transactions.TransactionsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // اپ همیشه روشن است — آیکون‌های نوار وضعیت باید تیره بمانند (مثل وب)
+        // شروع با حالت روشن؛ هم‌گام با تم کاربر در کامپوزیشن به‌روز می‌شود
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
@@ -95,7 +96,20 @@ class MainActivity : ComponentActivity() {
         val app = application as JibetApp
         setContent {
             val accent by app.settings.accent.collectAsState(initial = "blue")
-            JibetTheme(accentKey = accent) {
+            val themeMode by app.settings.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+            val systemDark = isSystemInDarkTheme()
+            val dark = when (themeMode) {
+                ThemeMode.SYSTEM -> systemDark
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
+            // آیکون‌های نوار وضعیت/ناوبری باید با تم جابه‌جا شوند
+            LaunchedEffect(dark) {
+                val style = if (dark) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+                enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+            }
+            JibetTheme(accentKey = accent, dark = dark) {
                 // کل اپ مثل وب dir="rtl" است — مستقل از لوکال دستگاه
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
@@ -114,9 +128,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** اسپلش شروع — مثل Splash وب */
+/** اسپلش شروع — مثل Splash وب (تم‌آگاه) */
 @Composable
 private fun Splash() {
+    val jc = LocalJibetColors.current
     Column(
         Modifier
             .fillMaxSize()
@@ -133,11 +148,11 @@ private fun Splash() {
         Spacer(Modifier.height(20.dp))
         Text(
             "جیبت",
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 30.sp, color = Ink),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 30.sp, color = jc.ink),
         )
         Text(
             "jibet",
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = InkSoft, letterSpacing = 0.2.em),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = jc.inkSoft, letterSpacing = 0.2.em),
             modifier = Modifier.padding(top = 2.dp),
         )
         Spacer(Modifier.height(24.dp))
@@ -153,7 +168,7 @@ private fun Splash() {
                 .width(160.dp)
                 .height(6.dp)
                 .clip(RoundedCornerShape(50))
-                .background(Color(0xFFD8DEF0))
+                .background(jc.divider)
         ) {
             Box(
                 Modifier
@@ -167,7 +182,7 @@ private fun Splash() {
         Spacer(Modifier.height(8.dp))
         Text(
             "در حال آماده‌سازی…",
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
         )
     }
 }

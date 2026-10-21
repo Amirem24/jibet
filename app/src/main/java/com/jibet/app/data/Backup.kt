@@ -99,9 +99,10 @@ private val backupJson = Json {
 
 /** کلیدهای مجاز تنظیمات قابل انتقال در پشتیبان */
 private val BACKUP_ACCENT_KEYS = setOf("blue", "green", "purple", "orange")
+private val BACKUP_THEME_KEYS = setOf("system", "light", "dark")
 
 /** ساخت فایل پشتیبان JSON — سازگار با نسخه وب
- *  تنظیمات اپ (رنگ اپ) هم داخل فایل می‌رود تا با پشتیبان جابه‌جا شود */
+ *  تنظیمات اپ (رنگ اپ + حالت روشن/تاریک) هم داخل فایل می‌رود تا با پشتیبان جابه‌جا شود */
 suspend fun JibetRepository.exportBackupJson(settings: SettingsRepository? = null): String {
     val accounts = dao.allAccounts()
     val categories = dao.allCategories()
@@ -109,13 +110,18 @@ suspend fun JibetRepository.exportBackupJson(settings: SettingsRepository? = nul
     val budgets = dao.allBudgets()
     val goals = dao.allGoals()
     val recurrings = dao.allRecurrings()
-    val accent = settings?.let { s -> s.accent.first() }
+    val settingsMap = settings?.let { s ->
+        buildMap {
+            put("accent", kotlinx.serialization.json.JsonPrimitive(s.accent.first()))
+            put("theme", kotlinx.serialization.json.JsonPrimitive(s.themeMode.first().key))
+        }
+    }
 
     val payload = BackupPayload(
         app = "jibet",
         version = 1,
         exportedAt = Instant.now().toString(),
-        settings = accent?.let { mapOf("accent" to JsonPrimitive(it)) },
+        settings = settingsMap,
         accounts = accounts.map {
             BackupAccount(
                 name = it.name, kind = it.kind.name.lowercase(), initialBalance = it.initialBalance,
@@ -162,8 +168,14 @@ suspend fun JibetRepository.exportBackupJson(settings: SettingsRepository? = nul
 
 /** بازیابی کامل از فایل پشتیبان — جایگزینی همه‌ی داده‌ها
  *  قبل از هر پاک‌سازی اعتبارسنجی می‌شود تا کاربر با صفر حساب/دسته رها نشود؛
- *  تنظیمات اپ (رنگ) هم بعد از بازیابی موفق اعمال می‌شود */
-suspend fun JibetRepository.restoreBackup(json: String, settings: SettingsRepository? = null) {
+ *  پیش از پاک‌سازی، یک نسخه‌ی خودکار از داده‌ی فعلی در حافظه‌ی داخلی نوشته می‌شود
+ *  (file پیش‌فرض نام «jibet-auto-pre-restore.json») تا کاربر همیشه راه برگشت داشته باشد؛
+ *  تنظیمات اپ (رنگ/تم) هم بعد از بازیابی موفق اعمال می‌شوند */
+suspend fun JibetRepository.restoreBackup(
+    json: String,
+    settings: SettingsRepository? = null,
+    snapshotFile: java.io.File? = null,
+) {
     val payload = try {
         backupJson.decodeFromString<BackupPayload>(json)
     } catch (_: SerializationException) {
@@ -179,6 +191,17 @@ suspend fun JibetRepository.restoreBackup(json: String, settings: SettingsReposi
     }
     if (payload.categories.isEmpty()) {
         throw IllegalArgumentException("فایل پشتیبان هیچ دسته‌بندی‌ای ندارد")
+    }
+
+    // اسنپ‌شات اطمینان از داده‌ی فعلی — اگر هر چیزی در بازیابی خراب شود، این فایل باقی می‌ماند
+    if (snapshotFile != null) {
+        runCatching {
+            val snap = exportBackupJson(null)
+            val tmp = java.io.File(snapshotFile.parentFile, snapshotFile.name + ".tmp")
+            tmp.writeText(snap)
+            if (snapshotFile.exists()) snapshotFile.delete()
+            tmp.renameTo(snapshotFile)
+        }
     }
 
     db.withTransactionCompat {
@@ -264,6 +287,9 @@ suspend fun JibetRepository.restoreBackup(json: String, settings: SettingsReposi
     (payload.settings?.get("accent") as? JsonPrimitive)?.content?.let { key ->
         if (key in BACKUP_ACCENT_KEYS) settings?.setAccent(key)
     }
+    (payload.settings?.get("theme") as? JsonPrimitive)?.content?.let { key ->
+        if (key in BACKUP_THEME_KEYS) settings?.setThemeMode(ThemeMode.fromKey(key))
+    }
 }
 
 /** خروجی CSV با BOM — دقیقاً مثل /api/export وب */
@@ -290,6 +316,6 @@ suspend fun JibetRepository.exportCsv(): String {
     return "\uFEFF" + (listOf(header.joinToString(",")) + rows).joinToString("\r\n")
 }
 
-private suspend fun JibetDatabase.withTransactionCompat(block: suspend () -> Unit) {
+internal suspend fun JibetDatabase.withTransactionCompat(block: suspend () -> Unit) {
     withTransaction { block() }
 }

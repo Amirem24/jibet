@@ -124,6 +124,15 @@ interface JibetDao {
     @Query("SELECT COUNT(*) FROM transactions WHERE categoryId = :categoryId")
     suspend fun countCategoryTx(categoryId: Long): Int
 
+    @Query("SELECT COUNT(*) FROM recurring WHERE accountId = :accountId")
+    suspend fun countAccountRecurring(accountId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM recurring WHERE categoryId = :categoryId")
+    suspend fun countCategoryRecurring(categoryId: Long): Int
+
+    @Query("DELETE FROM budgets WHERE categoryId = :categoryId")
+    suspend fun deleteBudgetsForCategory(categoryId: Long)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategory(c: CategoryEntity): Long
 
@@ -146,6 +155,7 @@ interface JibetDao {
         """
         const val TX_FILTER = """
             (:q = '' OR t.title LIKE '%' || :q || '%' OR t.note LIKE '%' || :q || '%' OR c.name LIKE '%' || :q || '%')
+            AND (:qNum = '' OR CAST(CAST(t.amount AS INTEGER) AS TEXT) LIKE '%' || :qNum || '%')
             AND (:kindIsAll OR t.kind = :kind)
             AND (:accountId = 0 OR t.accountId = :accountId)
             AND (:categoryId = 0 OR t.categoryId = :categoryId)
@@ -159,6 +169,7 @@ interface JibetDao {
     )
     fun watchTxPage(
         q: String,
+        qNum: String,
         kindIsAll: Boolean,
         kind: Kind,
         accountId: Long,
@@ -180,6 +191,7 @@ interface JibetDao {
     )
     fun watchTxTotals(
         q: String,
+        qNum: String,
         kindIsAll: Boolean,
         kind: Kind,
         accountId: Long,

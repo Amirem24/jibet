@@ -18,8 +18,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jibet.app.data.TxRow
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
@@ -53,10 +51,11 @@ fun TxRowItem(
     modifier: Modifier = Modifier,
     subtitleOverride: String? = null,
 ) {
+    val jc = LocalJibetColors.current
     Row(
         modifier
             .fillMaxWidth()
-            .pressableScale(onClick = onClick)
+            .pressableScale(onClick = onClick, role = androidx.compose.ui.semantics.Role.Button)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -64,18 +63,19 @@ fun TxRowItem(
         IconBubble(
             icon = tx.catIcon ?: "more-horizontal",
             color = parseColor(tx.catColor),
+            contentDescription = tx.catName,
         )
         Column(Modifier.weight(1f)) {
             Text(
                 tx.title,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
             Text(
                 subtitleOverride
                     ?: "${tx.catName ?: "بدون دسته"} · ${tx.accName ?: "بدون حساب"}",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
@@ -102,7 +102,7 @@ fun NetBadge(net: Double, modifier: Modifier = Modifier) {
     if (net == 0.0) {
         Text(
             "۰ تومان",
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFFB4BAC8)),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = jc.faint),
             modifier = modifier,
         )
     } else {
@@ -144,7 +144,7 @@ fun TxSummaryLine(income: Double, expense: Double, total: Int, modifier: Modifie
         }
         Text(
             "${Fmt.faDigits(total)} مورد",
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.5.sp, color = InkSoft),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.5.sp, color = jc.inkSoft),
         )
     }
 }
@@ -157,6 +157,7 @@ fun TxGroupedList(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        val jc = LocalJibetColors.current
         groups.forEach { g ->
             Column {
                 Row(
@@ -169,7 +170,7 @@ fun TxGroupedList(
                 ) {
                     Text(
                         Fmt.faDigits(g.label),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = jc.inkSoft),
                     )
                     NetBadge(net = g.net)
                 }

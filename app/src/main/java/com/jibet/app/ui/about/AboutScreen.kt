@@ -27,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.TextStyle
@@ -41,11 +40,7 @@ import com.jibet.app.ui.components.JibetLogo
 import com.jibet.app.ui.components.ScreenHeader
 import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetGlass
-import com.jibet.app.ui.theme.IncomeSoft
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
 import kotlinx.coroutines.delay
@@ -67,9 +62,9 @@ private val FEATURES = listOf(
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
     val jc = LocalJibetColors.current
-    // .jb-accent-soft وب: پس‌زمینه = ۱۲٪ accentA روی سفید، متن = ۸۰٪ accentA + ۲۰٪ ink
-    val softBg = lerp(Color.White, jc.accentA, 0.12f)
-    val softFg = lerp(Ink, jc.accentA, 0.8f)
+    // .jb-accent-soft وب: پس‌زمینه = ۱۲٪ accentA روی کارت، متن = ۸۰٪ accentA + ۲۰٪ ink
+    val softBg = lerp(jc.card, jc.accentA, 0.12f)
+    val softFg = lerp(jc.ink, jc.accentA, 0.8f)
     // نسخه با ارقام فارسی و جداکننده «٫» — از BuildConfig تا همیشه با نسخه‌ی واقعی یکی باشد
     val version = Fmt.faDigits(BuildConfig.VERSION_NAME).replace('.', '٫')
 
@@ -95,7 +90,7 @@ fun AboutScreen(onBack: () -> Unit) {
                         fontWeight = FontWeight.Black,
                         fontSize = 24.sp,
                         letterSpacing = (-0.025).em,
-                        color = Ink,
+                        color = jc.ink,
                     ),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 4.dp),
@@ -109,7 +104,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 )
                 Text(
                     "مدیریت مالی، ساده‌تر از همیشه",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = jc.inkSoft),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 4.dp),
                 )
@@ -126,7 +121,7 @@ fun AboutScreen(onBack: () -> Unit) {
             ) {
                 Text(
                     "ویژگی‌های جیبت",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
                     modifier = Modifier.padding(bottom = 14.dp),
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -139,7 +134,7 @@ fun AboutScreen(onBack: () -> Unit) {
                                 Modifier
                                     .size(28.dp)
                                     .clip(CircleShape)
-                                    .background(IncomeSoft),
+                                    .background(jc.incomeSoft),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
@@ -151,7 +146,7 @@ fun AboutScreen(onBack: () -> Unit) {
                             }
                             Text(
                                 f,
-                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = TextMid),
+                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, color = jc.textMid),
                             )
                         }
                     }
@@ -186,7 +181,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 Column(Modifier.weight(1f)) {
                     Text(
                         "نصب روی گوشی",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
                     )
                     Text(
                         "این نسخه بومی اندروید جیبت است؛ همه‌ی داده‌ها فقط روی همین گوشی ذخیره می‌شود.",
@@ -195,7 +190,7 @@ fun AboutScreen(onBack: () -> Unit) {
                             fontWeight = FontWeight.Medium,
                             fontSize = 12.5.sp,
                             lineHeight = 24.sp,
-                            color = InkSoft,
+                            color = jc.inkSoft,
                         ),
                         modifier = Modifier.padding(top = 4.dp),
                     )
@@ -207,7 +202,7 @@ fun AboutScreen(onBack: () -> Unit) {
         FadeUp(delayMs = 200) {
             Text(
                 "ساخته‌شده با دقت برای مدیریت آرام مالی",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = jc.inkSoft),
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()

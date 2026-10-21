@@ -110,6 +110,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
@@ -122,13 +125,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jibet.app.data.Kind
-import com.jibet.app.ui.theme.BgA
-import com.jibet.app.ui.theme.BgB
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.util.Fmt
 
 /* ================= آیکون‌ها — نگاشت نام lucide به آیکون متریال ================= */
@@ -176,66 +173,77 @@ object JibetIcon {
 
 /* ================= پس‌زمینه و کارت‌ها ================= */
 
-/** پس‌زمینه‌ی نرم جیبت — دقیقاً مثل .jibet-bg وب */
-fun Modifier.jibetBackdrop(): Modifier = drawBehind {
-    drawRect(Brush.verticalGradient(listOf(BgA, BgB)))
-    drawRect(
-        Brush.radialGradient(
-            colors = listOf(Color(0x246E7BFF), Color(0x006E7BFF)),
-            center = Offset(size.width * 0.85f, -size.height * 0.10f),
-            radius = size.width * 1.2f,
+/** پس‌زمینه‌ی نرم جیبت — دقیقاً مثل .jibet-bg وب (روشن/تیره) */
+@Composable
+fun Modifier.jibetBackdrop(): Modifier {
+    val jc = LocalJibetColors.current
+    return drawBehind {
+        drawRect(Brush.verticalGradient(listOf(jc.bgA, jc.bgB)))
+        drawRect(
+            Brush.radialGradient(
+                colors = listOf(jc.accentB.copy(alpha = if (jc.isDark) 0.10f else 0.14f), Color.Transparent),
+                center = Offset(size.width * 0.85f, -size.height * 0.10f),
+                radius = size.width * 1.2f,
+            )
         )
-    )
-    drawRect(
-        Brush.radialGradient(
-            colors = listOf(Color(0x1A4F8CFF), Color(0x004F8CFF)),
-            center = Offset(0f, 0f),
-            radius = size.width,
+        drawRect(
+            Brush.radialGradient(
+                colors = listOf(jc.accentA.copy(alpha = if (jc.isDark) 0.08f else 0.10f), Color.Transparent),
+                center = Offset(0f, 0f),
+                radius = size.width,
+            )
         )
-    )
+    }
 }
 
-/** کارت سفید نرم — مثل .jb-card وب */
-fun Modifier.jibetCard(shape: Shape = RoundedCornerShape(24.dp)): Modifier = this
-    .shadow(
-        elevation = 10.dp,
-        shape = shape,
-        ambientColor = Color(0x145B74E9),
-        spotColor = Color(0x2E5B74E9),
-    )
-    .clip(shape)
-    .background(Color.White)
+/** کارت نرم — مثل .jb-card وب */
+@Composable
+fun Modifier.jibetCard(shape: Shape = RoundedCornerShape(24.dp)): Modifier {
+    val jc = LocalJibetColors.current
+    return this
+        .shadow(
+            elevation = 10.dp,
+            shape = shape,
+            ambientColor = Color(0x145B74E9),
+            spotColor = if (jc.isDark) Color(0x00000000) else Color(0x2E5B74E9),
+        )
+        .clip(shape)
+        .background(jc.card)
+}
 
 /** سطوح شیشه‌ای — مثل .jb-glass وب (بلور تقریبی با گرادیان نیمه‌شفاف + هایلایت داخلی لبه بالا) */
-fun Modifier.jibetGlass(shape: Shape = RoundedCornerShape(24.dp)): Modifier = this
-    .shadow(
-        elevation = 12.dp,
-        shape = shape,
-        ambientColor = Color(0x145B74E9),
-        spotColor = Color(0x405B74E9),
-    )
-    .clip(shape)
-    .background(
-        Brush.linearGradient(
-            listOf(Color.White.copy(alpha = 0.74f), Color.White.copy(alpha = 0.5f)),
-            start = Offset(0f, 0f),
-            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+@Composable
+fun Modifier.jibetGlass(shape: Shape = RoundedCornerShape(24.dp)): Modifier {
+    val jc = LocalJibetColors.current
+    return this
+        .shadow(
+            elevation = 12.dp,
+            shape = shape,
+            ambientColor = Color(0x145B74E9),
+            spotColor = if (jc.isDark) Color(0x00000000) else Color(0x405B74E9),
         )
-    )
-    // حاشیه‌ی گرادیانی = هایلایت inset «0 1px 0 rgba(255,255,255,.7)» وب
-    .border(
-        1.dp,
-        Brush.verticalGradient(
-            listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.15f))
-        ),
-        shape,
-    )
+        .clip(shape)
+        .background(
+            Brush.linearGradient(
+                listOf(jc.glassTop, jc.glassBottom),
+                start = Offset(0f, 0f),
+                end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+            )
+        )
+        // حاشیه‌ی گرادیانی = هایلایت inset «0 1px 0 rgba(255,255,255,.7)» وب
+        .border(
+            1.dp,
+            Brush.verticalGradient(listOf(jc.glassBorder, jc.glassBorder.copy(alpha = jc.glassBorder.alpha * 0.2f))),
+            shape,
+        )
+}
 
 /** افکت فشردن نرم — مثل .jb-pressable وب (scale .97 + آلفا .۹ حین فشردن) */
 @Composable
 fun Modifier.pressableScale(
     onClick: (() -> Unit)? = null,
     pressedScale: Float = 0.97f,
+    role: Role? = null,
 ): Modifier {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -249,7 +257,12 @@ fun Modifier.pressableScale(
         .alpha(if (pressed) 0.9f else 1f)
         .then(
             if (onClick != null) {
-                Modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick)
+                Modifier.clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    role = role,
+                    onClick = onClick,
+                )
             } else {
                 Modifier
             }
@@ -278,20 +291,24 @@ fun IconBubble(
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
     iconSize: Dp = size * 0.5f,
+    contentDescription: String? = null,
 ) {
-    val isSoft = color == Color(0xFF8A93A6)
-    val bg = if (isSoft) Color(0xFFF1F3F9) else color.copy(alpha = 0.11f)
+    val jc = LocalJibetColors.current
+    val isSoft = color == Color(0xFF8A93A6) || color == jc.inkSoft
+    val bg = if (isSoft) jc.iconBubbleBg else color.copy(alpha = 0.11f)
+    val tint = if (isSoft) jc.iconMuted else color
     Box(
         modifier
             .size(size)
             .clip(CircleShape)
-            .background(bg),
+            .background(bg)
+            .semantics { contentDescription?.let { this.contentDescription = it } },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = JibetIcon.get(icon),
             contentDescription = null,
-            tint = color,
+            tint = tint,
             modifier = Modifier.size(iconSize),
         )
     }
@@ -356,6 +373,7 @@ fun ScreenHeader(
     subtitle: String? = null,
     action: (@Composable RowScope.() -> Unit)? = null,
 ) {
+    val jc = LocalJibetColors.current
     Row(
         modifier
             .fillMaxWidth()
@@ -363,7 +381,7 @@ fun ScreenHeader(
             .drawBehind {
                 drawRect(
                     Brush.verticalGradient(
-                        listOf(BgA.copy(alpha = 0.95f), BgA.copy(alpha = 0f))
+                        listOf(jc.bgA.copy(alpha = 0.95f), jc.bgA.copy(alpha = 0f))
                     )
                 )
             },
@@ -375,7 +393,7 @@ fun ScreenHeader(
                 Icon(
                     Icons.AutoMirrored.Rounded.ArrowBack,
                     contentDescription = "بازگشت",
-                    tint = TextMid,
+                    tint = jc.textMid,
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -383,14 +401,14 @@ fun ScreenHeader(
         Column(Modifier.weight(1f)) {
             Text(
                 title,
-                style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = Ink),
+                style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = jc.ink),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             if (subtitle != null) {
                 Text(
                     subtitle,
-                    style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -423,9 +441,9 @@ fun JibetChip(
                     )
                 else Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.8f))
+                    .background(jc.cardSoft)
             )
-            .pressableScale(onClick = onClick, pressedScale = 0.96f)
+            .pressableScale(onClick = onClick, pressedScale = 0.96f, role = Role.Button)
             .padding(horizontal = 14.dp)
             .height(36.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -435,7 +453,7 @@ fun JibetChip(
             Icon(
                 leadingIcon,
                 contentDescription = null,
-                tint = if (active) Color.White else TextMid,
+                tint = if (active) Color.White else jc.textMid,
                 modifier = Modifier.size(13.dp),
             )
         }
@@ -445,7 +463,7 @@ fun JibetChip(
                 fontFamily = com.jibet.app.ui.theme.Vazir,
                 fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
                 fontSize = 13.sp,
-                color = if (active) Color.White else TextMid,
+                color = if (active) Color.White else jc.textMid,
             ),
         )
     }
@@ -492,7 +510,7 @@ fun <T> JibetSegmented(
                         fontFamily = com.jibet.app.ui.theme.Vazir,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        color = if (active) Color.White else InkSoft,
+                        color = if (active) Color.White else jc.inkSoft,
                     ),
                 )
             }
@@ -507,8 +525,10 @@ fun JibetProgress(
     modifier: Modifier = Modifier,
     color: Color = LocalJibetColors.current.accentA,
     height: Dp = 8.dp,
-    track: Color = Color(0x248A92A6),
+    track: Color? = null,
 ) {
+    val jc = LocalJibetColors.current
+    val trackColor = track ?: jc.track
     val w = pct.coerceIn(0f, 100f)
     val animated by animateFloatAsState(w / 100f, tween(500), label = "progress")
     Box(
@@ -516,7 +536,7 @@ fun JibetProgress(
             .fillMaxWidth()
             .height(height)
             .clip(CircleShape)
-            .background(track)
+            .background(trackColor)
     ) {
         Box(
             Modifier
@@ -541,9 +561,10 @@ fun AmountText(
         fontWeight = FontWeight.Bold,
         fontSize = 13.5.sp,
     ),
-    suffixStyle: TextStyle = style.copy(fontSize = style.fontSize * 0.72f, fontWeight = FontWeight.Medium, color = InkSoft),
+    suffixStyle: TextStyle? = null,
 ) {
     val jc = LocalJibetColors.current
+    val sfx = suffixStyle ?: style.copy(fontSize = style.fontSize * 0.72f, fontWeight = FontWeight.Medium, color = jc.inkSoft)
     val color = if (kind == Kind.INCOME) jc.income else jc.expense
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         if (withSign) {
@@ -558,7 +579,7 @@ fun AmountText(
         Text(Fmt.money(amount), style = style.copy(color = color))
         if (suffix.isNotEmpty()) {
             Box(Modifier.width(3.dp))
-            Text(suffix, style = suffixStyle.copy(color = suffixStyle.color))
+            Text(suffix, style = sfx)
         }
     }
 }
@@ -595,13 +616,13 @@ fun EmptyState(
         }
         Text(
             title,
-            style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Ink),
+            style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = jc.ink),
             textAlign = TextAlign.Center,
         )
         if (description != null) {
             Text(
                 description,
-                style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 24.sp, color = InkSoft),
+                style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 24.sp, color = jc.inkSoft),
                 textAlign = TextAlign.Center,
             )
         }
@@ -660,32 +681,39 @@ fun JibetKeypad(
         }
     }
     val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "del")
+    val jc = LocalJibetColors.current
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         keys.chunked(3).forEach { rowKeys ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 rowKeys.forEach { k ->
+                    val keyLabel = when (k) {
+                        "del" -> "حذف رقم"
+                        "000" -> "صفر صفر صفر"
+                        else -> "رقم ${Fmt.faDigits(k)}"
+                    }
                     Box(
                         Modifier
                             .weight(1f)
                             .shadow(6.dp, RoundedCornerShape(16.dp), spotColor = Color(0x405B74E9), ambientColor = Color.Transparent)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color.White.copy(alpha = 0.85f))
-                            .pressableScale(onClick = { press(k) }, pressedScale = 0.95f)
+                            .background(jc.inputBg)
+                            .semantics { contentDescription = keyLabel }
+                            .pressableScale(onClick = { press(k) }, pressedScale = 0.95f, role = Role.Button)
                             .height(54.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         if (k == "del") {
                             Icon(
                                 Icons.Rounded.Backspace,
-                                contentDescription = "حذف",
-                                tint = InkSoft,
+                                contentDescription = null,
+                                tint = jc.inkSoft,
                                 modifier = Modifier.size(22.dp),
                             )
                         } else {
                             Text(
                                 // «۰۰۰» باید سه صفر دیده شود، نه مثل «۰» فشرده شود
                                 if (k == "000") Fmt.faDigits("000") else Fmt.money(k.toLong()),
-                                style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 21.sp, color = Ink),
+                                style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 21.sp, color = jc.ink),
                             )
                         }
                     }
@@ -742,7 +770,7 @@ fun AmountInput(
                     onValueChange(input.text)
                 },
                 singleLine = true,
-                textStyle = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
+                textStyle = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.ink),
                 cursorBrush = SolidColor(jc.accentA),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier
@@ -752,7 +780,7 @@ fun AmountInput(
             if (fieldValue.text.isEmpty() && placeholder.isNotEmpty()) {
                 Text(
                     placeholder,
-                    style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
+                    style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.faint),
                     modifier = Modifier.align(Alignment.CenterStart),
                 )
             }
@@ -767,10 +795,11 @@ fun JibetField(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val jc = LocalJibetColors.current
     Column(modifier) {
         Text(
             label,
-            style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextMid),
+            style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.textMid),
             modifier = Modifier.padding(bottom = 6.dp),
         )
         content()
@@ -779,17 +808,21 @@ fun JibetField(
 
 /** استایل فیلد متنی — مثل inputClass وب */
 @Composable
-fun Modifier.jibetInputShape(): Modifier = this
-    .clip(RoundedCornerShape(16.dp))
-    .background(Color.White.copy(alpha = 0.85f))
-    .border(1.dp, InkSoft.copy(alpha = 0.18f), RoundedCornerShape(16.dp))
+fun Modifier.jibetInputShape(): Modifier {
+    val jc = LocalJibetColors.current
+    return this
+        .clip(RoundedCornerShape(16.dp))
+        .background(jc.inputBg)
+        .border(1.dp, jc.inkSoft.copy(alpha = 0.18f), RoundedCornerShape(16.dp))
+}
 
 /** تیتر بخش داخل شیت‌ها و فرم‌ها */
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
+    val jc = LocalJibetColors.current
     Text(
         text,
-        style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextMid),
+        style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.textMid),
         modifier = modifier.padding(bottom = 8.dp),
     )
 }

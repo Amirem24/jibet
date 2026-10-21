@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,6 +73,7 @@ fun JibetBottomNav(
             .padding(bottom = 12.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
+        val jc = LocalJibetColors.current
         Row(
             Modifier
                 .fillMaxWidth(0.94f)
@@ -80,7 +82,7 @@ fun JibetBottomNav(
                 .shadow(
                     20.dp,
                     RoundedCornerShape(26.dp),
-                    spotColor = Color(0x47232B3B),
+                    spotColor = if (jc.isDark) Color(0x66000000) else Color(0x47232B3B),
                     ambientColor = Color.Transparent,
                 )
                 .clip(RoundedCornerShape(26.dp))
@@ -116,7 +118,7 @@ fun JibetBottomNav(
                         .clip(CircleShape)
                         .background(accentGradient())
                         .size(56.dp)
-                        .clickable(interactionSource = interaction, indication = null, onClick = onAdd),
+                        .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onAdd),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -137,12 +139,13 @@ fun JibetBottomNav(
 
 @Composable
 private fun NavTabButton(tab: NavTab, active: Boolean, onClick: () -> Unit) {
-    val color = if (active) LocalJibetColors.current.accentA else Color(0xFFA7AEC0)
+    val jc = LocalJibetColors.current
+    val color = if (active) jc.accentA else jc.iconMuted
     Column(
         Modifier
             .width(68.dp)
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, role = Role.Tab)
             .padding(top = 6.dp, bottom = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

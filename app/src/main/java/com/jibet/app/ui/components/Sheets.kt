@@ -31,8 +31,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
+import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
 
 /** شیت پایین صفحه با استایل شیشه‌ای — پایه‌ی همه‌ی فرم‌ها و جزئیات (مثل Sheet.tsx وب) */
@@ -44,12 +43,13 @@ fun JibetSheet(
     title: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val jc = LocalJibetColors.current
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = Color.Transparent,
         contentColor = Color.Unspecified,
-        scrimColor = Color(0x59232B3B),
+        scrimColor = jc.scrim,
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
@@ -70,7 +70,7 @@ fun JibetSheet(
                     .padding(bottom = 12.dp)
                     .width(48.dp)
                     .height(6.dp)
-                    .background(Color(0x26232B3B), RoundedCornerShape(50)),
+                    .background(jc.faint.copy(alpha = 0.35f), RoundedCornerShape(50)),
             )
             if (title != null) {
                 Row(
@@ -81,19 +81,19 @@ fun JibetSheet(
                 ) {
                     Text(
                         title,
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = jc.ink),
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(
                         onClick = onDismiss,
                         modifier = Modifier
                             .size(36.dp)
-                            .background(Color.White.copy(alpha = 0.7f), RoundedCornerShape(50)),
+                            .background(jc.cardSoft, RoundedCornerShape(50)),
                     ) {
                         Icon(
                             Icons.Rounded.Close,
                             contentDescription = "بستن",
-                            tint = InkSoft,
+                            tint = jc.inkSoft,
                             modifier = Modifier.size(18.dp),
                         )
                     }

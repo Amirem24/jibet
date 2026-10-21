@@ -67,16 +67,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jibet.app.JibetApp
+import com.jibet.app.data.ThemeMode
 import com.jibet.app.ui.components.JibetLogo
+import com.jibet.app.ui.components.JibetSegmented
 import com.jibet.app.ui.components.ScreenHeader
 import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.BgA
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.ACCENT_PRESETS
@@ -96,6 +94,10 @@ class MoreViewModel(application: Application) : AndroidViewModel(application) {
     val accent: StateFlow<String> = app.settings.accent
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "blue")
 
+    /** حالت نمایش برنامه — سیستمی/روشن/تاریک */
+    val themeMode: StateFlow<ThemeMode> = app.settings.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.SYSTEM)
+
     val totalBalance: StateFlow<Double> = repo.watchTotalBalance()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
 
@@ -114,6 +116,10 @@ class MoreViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setAccent(key: String) {
         viewModelScope.launch { app.settings.setAccent(key) }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { app.settings.setThemeMode(mode) }
     }
 
     fun loadSample() {
@@ -193,9 +199,10 @@ private fun FadeUp(delayMs: Int, modifier: Modifier = Modifier, offsetY: Dp = 12
 /** تیتر بخش — مثل SectionTitle وب (mt-6 mb-2 px-1) */
 @Composable
 private fun SectionTitle(text: String) {
+    val jc = LocalJibetColors.current
     Text(
         text,
-        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
         modifier = Modifier
             .padding(top = 24.dp, bottom = 8.dp)
             .padding(start = 4.dp, end = 4.dp),
@@ -203,23 +210,24 @@ private fun SectionTitle(text: String) {
 }
 
 /** حلقه‌ی انتخاب رنگ فعال — مثل ring-2 + ring-offset-2 وب (بدون تغییر لی‌اوت) */
-private fun Modifier.accentRing(active: Boolean): Modifier =
-    if (active) {
-        this.drawBehind {
-            val stroke = 2.dp.toPx()
-            val r = size.minDimension / 2f
-            // باند رنگ پس‌زمینه (offset) سپس باند مرکبی ۳۰٪
-            drawCircle(BgA, radius = r + stroke / 2f, style = Stroke(stroke))
-            drawCircle(Ink.copy(alpha = 0.3f), radius = r + stroke * 1.5f, style = Stroke(stroke))
-        }
-    } else {
-        this
+@Composable
+private fun Modifier.accentRing(active: Boolean): Modifier {
+    if (!active) return this
+    val jc = LocalJibetColors.current
+    return this.drawBehind {
+        val stroke = 2.dp.toPx()
+        val r = size.minDimension / 2f
+        // باند رنگ پس‌زمینه (offset) سپس باند مرکبی ۳۰٪
+        drawCircle(jc.bgA, radius = r + stroke / 2f, style = Stroke(stroke))
+        drawCircle(jc.ink.copy(alpha = 0.3f), radius = r + stroke * 1.5f, style = Stroke(stroke))
     }
+}
 
 @Composable
 fun MoreScreen(onPush: (String) -> Unit, onTab: (String) -> Unit) {
     val vm: MoreViewModel = viewModel()
     val accent by vm.accent.collectAsState()
+    val themeMode by vm.themeMode.collectAsState()
     val totalBalance by vm.totalBalance.collectAsState()
 
     Column(
@@ -239,6 +247,9 @@ fun MoreScreen(onPush: (String) -> Unit, onTab: (String) -> Unit) {
         FadeUp(100) {
             AccentCard(accent = accent, onSelect = { vm.setAccent(it) })
         }
+        FadeUp(120) {
+            ThemeCard(mode = themeMode, onSelect = { vm.setThemeMode(it) })
+        }
 
         SectionTitle("داده‌ها (دمو)")
         FadeUp(150) { DataCard(vm = vm) }
@@ -249,6 +260,7 @@ fun MoreScreen(onPush: (String) -> Unit, onTab: (String) -> Unit) {
 
 @Composable
 private fun IntroCard(totalBalance: Double) {
+    val jc = LocalJibetColors.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -261,13 +273,13 @@ private fun IntroCard(totalBalance: Double) {
         Column(Modifier.weight(1f)) {
             Text(
                 "جیبت",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 16.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 16.sp, color = jc.ink),
             )
             Text(
                 buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = InkSoft)) { append("موجودی کل: ") }
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Ink)) { append(Fmt.money(totalBalance)) }
-                    withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = InkSoft)) { append(" تومان") }
+                    withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = jc.inkSoft)) { append("موجودی کل: ") }
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = jc.ink)) { append(Fmt.money(totalBalance)) }
+                    withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = jc.inkSoft)) { append(" تومان") }
                 },
                 style = TextStyle(fontFamily = Vazir, fontSize = 12.5.sp),
                 maxLines = 1,
@@ -303,6 +315,7 @@ private fun HubList(onPush: (String) -> Unit, onTab: (String) -> Unit) {
 
 @Composable
 private fun HubRow(title: String, colorHex: String, icon: ImageVector, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     val color = parseColor(colorHex)
     Row(
         Modifier
@@ -329,7 +342,7 @@ private fun HubRow(title: String, colorHex: String, icon: ImageVector, onClick: 
         }
         Text(
             title,
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
@@ -337,7 +350,7 @@ private fun HubRow(title: String, colorHex: String, icon: ImageVector, onClick: 
         Icon(
             Icons.Rounded.ChevronLeft,
             contentDescription = null,
-            tint = Faint,
+            tint = jc.faint,
             modifier = Modifier.size(18.dp),
         )
     }
@@ -348,10 +361,11 @@ private fun HubRow(title: String, colorHex: String, icon: ImageVector, onClick: 
 @Composable
 private fun AccentCard(accent: String, onSelect: (String) -> Unit) {
     val context = LocalContext.current
+    val jc = LocalJibetColors.current
     Column(Modifier.jibetCard().padding(16.dp)) {
         Text(
             "رنگ برنامه",
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
         )
         Row(
             Modifier
@@ -376,6 +390,38 @@ private fun AccentCard(accent: String, onSelect: (String) -> Unit) {
                 )
             }
         }
+    }
+}
+
+/** کارت حالت نمایش — سیستمی/روشن/تاریک، هم‌زبان بصری با کارت رنگ */
+@Composable
+private fun ThemeCard(mode: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    val jc = LocalJibetColors.current
+    Column(Modifier.jibetCard().padding(16.dp)) {
+        Text(
+            "حالت نمایش",
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
+        )
+        JibetSegmented(
+            value = mode,
+            options = listOf(
+                ThemeMode.SYSTEM to "سیستمی",
+                ThemeMode.LIGHT to "روشن",
+                ThemeMode.DARK to "تاریک",
+            ),
+            onChange = { onSelect(it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            activeColor = jc.accentA,
+        )
+        Text(
+            "تاریک: پس‌زمینه‌ی تیره برای شب",
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = jc.inkSoft),
+            modifier = Modifier
+                .padding(top = 10.dp)
+                .padding(start = 4.dp, end = 4.dp),
+        )
     }
 }
 
@@ -422,7 +468,7 @@ private fun DataCard(vm: MoreViewModel) {
             }
             Text(
                 "چند تراکنش، بودجه و هدف آزمایشی ساخته می‌شود؛ فقط وقتی هیچ تراکنشی نداشته باشید کار می‌کند.",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, lineHeight = 20.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, lineHeight = 20.sp, color = jc.inkSoft),
                 modifier = Modifier
                     .padding(top = 6.dp)
                     .padding(start = 4.dp, end = 4.dp),
@@ -433,7 +479,7 @@ private fun DataCard(vm: MoreViewModel) {
             Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Ink.copy(alpha = 0.05f))
+                .background(jc.ink.copy(alpha = 0.05f))
         )
 
         // پاک‌سازی تراکنش‌ها
@@ -480,7 +526,7 @@ private fun DataCard(vm: MoreViewModel) {
             }
             Text(
                 "همه‌ی تراکنش‌ها، بودجه‌ها، هدف‌ها و موارد تکراری حذف می‌شوند و قابل بازگشت نیستند.",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, lineHeight = 20.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, lineHeight = 20.sp, color = jc.inkSoft),
                 modifier = Modifier
                     .padding(top = 6.dp)
                     .padding(start = 4.dp, end = 4.dp),

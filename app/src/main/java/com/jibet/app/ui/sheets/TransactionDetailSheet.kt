@@ -75,14 +75,7 @@ import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Expense
-import com.jibet.app.ui.theme.ExpenseSoft
-import com.jibet.app.ui.theme.Income
-import com.jibet.app.ui.theme.IncomeSoft
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
 import com.jibet.app.util.JDate
@@ -93,8 +86,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** رنگ متن روی پس‌زمینه‌ی jb-accent-soft — color-mix(accentA 80%, #232B3B 20%) وب */
-private fun accentSoftText(accent: Color): Color = lerp(accent, Color(0xFF232B3B), 0.2f)
+/** رنگ متن روی پس‌زمینه‌ی jb-accent-soft — color-mix(accentA 80%, ink 20%) وب */
+private fun accentSoftText(accent: Color, ink: Color): Color = lerp(accent, ink, 0.2f)
 
 /** شیت جزئیات تراکنش: نمایش + ویرایش + حذف دو مرحله‌ای (پورت transaction-detail.tsx) */
 @Composable
@@ -317,7 +310,7 @@ private fun DetailView(
             )
             Text(
                 tx.title,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = jc.ink),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 4.dp),
@@ -346,12 +339,12 @@ private fun DetailView(
                         Icon(
                             Icons.Rounded.Repeat,
                             contentDescription = null,
-                            tint = accentSoftText(jc.accentA),
+                            tint = accentSoftText(jc.accentA, jc.ink),
                             modifier = Modifier.size(12.dp),
                         )
                         Text(
                             "تراکنش تکراری",
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = accentSoftText(jc.accentA)),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = accentSoftText(jc.accentA, jc.ink)),
                         )
                     }
                 }
@@ -375,10 +368,10 @@ private fun DetailView(
                 )
                 Text(
                     tx.catName ?: "بدون دسته",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Ink),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.ink),
                 )
             }
-            HorizontalDivider(color = Color(0xFFF0F2F8), thickness = 1.dp)
+            HorizontalDivider(color = jc.divider, thickness = 1.dp)
             InfoRow(label = "حساب") {
                 IconBubble(
                     icon = tx.accIcon ?: "more-horizontal",
@@ -388,26 +381,26 @@ private fun DetailView(
                 )
                 Text(
                     tx.accName ?: "بدون حساب",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Ink),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.ink),
                 )
             }
-            HorizontalDivider(color = Color(0xFFF0F2F8), thickness = 1.dp)
+            HorizontalDivider(color = jc.divider, thickness = 1.dp)
             InfoRow(label = "تاریخ") {
                 Text(
                     Fmt.faDigits(JDate.formatJalaliDate(tx.date, JDate.Style.LONG)),
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Ink),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.ink),
                 )
                 Text(
                     "· ساعت " + Fmt.faDigits(JDate.timeLabel(tx.date)),
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = jc.inkSoft),
                 )
             }
             if (!tx.note.isNullOrBlank()) {
-                HorizontalDivider(color = Color(0xFFF0F2F8), thickness = 1.dp)
+                HorizontalDivider(color = jc.divider, thickness = 1.dp)
                 InfoRow(label = "یادداشت") {
                     Text(
                         tx.note,
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.5.sp, lineHeight = 20.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.5.sp, lineHeight = 20.sp, color = jc.ink),
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -436,19 +429,19 @@ private fun DetailView(
                     Icon(
                         Icons.Rounded.Edit,
                         contentDescription = null,
-                        tint = accentSoftText(jc.accentA),
+                        tint = accentSoftText(jc.accentA, jc.ink),
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
                         "ویرایش",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = accentSoftText(jc.accentA)),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = accentSoftText(jc.accentA, jc.ink)),
                     )
                 }
                 Row(
                     Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(ExpenseSoft)
+                        .background(jc.expenseSoft)
                         .pressableScale(onClick = onDeleteRequest)
                         .height(48.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -479,7 +472,7 @@ private fun DetailView(
                 ) {
                     Text(
                         "مطمئنی؟ این تراکنش حذف می‌شود",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.ink),
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -491,7 +484,7 @@ private fun DetailView(
                                 .weight(1f)
                                 .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = Color(0x99F26D6D), ambientColor = Color.Transparent)
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(Expense)
+                                .background(jc.expense)
                                 .alpha(if (busy) 0.6f else 1f)
                                 .pressableScale(onClick = if (!busy) ({ vm.delete(tx.id) }) else null)
                                 .height(48.dp),
@@ -528,7 +521,7 @@ private fun DetailView(
                         ) {
                             Text(
                                 "انصراف",
-                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextMid),
+                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.textMid),
                             )
                         }
                     }
@@ -558,6 +551,7 @@ private fun DetailEdit(
     onNoteChange: (String) -> Unit,
     onCancel: () -> Unit,
 ) {
+    val jc = LocalJibetColors.current
     val cats = categories.filter { it.kind == tx.kind }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -582,7 +576,7 @@ private fun DetailEdit(
         Column {
             Text(
                 "دسته‌بندی",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextMid),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.textMid),
                 modifier = Modifier.padding(bottom = 8.dp),
             )
             if (cats.isEmpty()) {
@@ -590,13 +584,13 @@ private fun DetailEdit(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White.copy(alpha = 0.7f))
+                        .background(jc.cardSoft)
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         "دسته‌ای موجود نیست",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 12.5.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 12.5.sp, color = jc.inkSoft),
                         textAlign = TextAlign.Center,
                     )
                 }
@@ -625,7 +619,7 @@ private fun DetailEdit(
         Column {
             Text(
                 "حساب",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextMid),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.textMid),
                 modifier = Modifier.padding(bottom = 8.dp),
             )
             Row(
@@ -677,12 +671,12 @@ private fun DetailEdit(
                     Icon(
                         Icons.Rounded.Close,
                         contentDescription = null,
-                        tint = TextMid,
+                        tint = jc.textMid,
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
                         "انصراف",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextMid),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.textMid),
                     )
                 }
             }
@@ -724,11 +718,12 @@ private fun DetailEdit(
 /** بج نوع تراکنش */
 @Composable
 private fun KindBadge(kind: Kind) {
+    val jc = LocalJibetColors.current
     val isIncome = kind == Kind.INCOME
     Box(
         Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (isIncome) IncomeSoft else ExpenseSoft)
+            .background(if (isIncome) jc.incomeSoft else jc.expenseSoft)
             .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
         Text(
@@ -737,7 +732,7 @@ private fun KindBadge(kind: Kind) {
                 fontFamily = Vazir,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp,
-                color = if (isIncome) Income else Expense,
+                color = if (isIncome) jc.income else jc.expense,
             ),
         )
     }
@@ -746,6 +741,7 @@ private fun KindBadge(kind: Kind) {
 /** ردیف اطلاعات جزئیات */
 @Composable
 private fun InfoRow(label: String, content: @Composable RowScope.() -> Unit) {
+    val jc = LocalJibetColors.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -755,7 +751,7 @@ private fun InfoRow(label: String, content: @Composable RowScope.() -> Unit) {
     ) {
         Text(
             label,
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = InkSoft),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.inkSoft),
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -769,6 +765,7 @@ private fun InfoRow(label: String, content: @Composable RowScope.() -> Unit) {
 /** چیپ انتخاب دسته/حساب با حباب آیکون — مثل Chip وب */
 @Composable
 private fun PickChip(label: String, colorHex: String, icon: String, active: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     val color = parseColor(colorHex)
     Row(
         Modifier
@@ -780,7 +777,7 @@ private fun PickChip(label: String, colorHex: String, icon: String, active: Bool
                 }
             )
             .clip(RoundedCornerShape(50))
-            .background(if (active) color else Color.White.copy(alpha = 0.85f))
+            .background(if (active) color else jc.inputBg)
             .pressableScale(onClick = onClick)
             .padding(horizontal = 14.dp)
             .height(36.dp),
@@ -799,7 +796,7 @@ private fun PickChip(label: String, colorHex: String, icon: String, active: Bool
                 fontFamily = Vazir,
                 fontWeight = FontWeight.Medium,
                 fontSize = 13.sp,
-                color = if (active) Color.White else TextMid,
+                color = if (active) Color.White else jc.textMid,
             ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

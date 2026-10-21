@@ -66,6 +66,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -90,11 +91,7 @@ import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.ui.theme.budgetBarColor
 import com.jibet.app.util.Fmt
@@ -198,6 +195,7 @@ fun BudgetScreen() {
         val jm by vm.jm.collectAsState()
         val budgets by vm.budgets.collectAsState()
         val expenseCats by vm.expenseCats.collectAsState()
+        val jc = LocalJibetColors.current
 
         var sheetOpen by remember { mutableStateOf(false) }
         var editing by remember { mutableStateOf<BudgetRow?>(null) }
@@ -229,7 +227,7 @@ fun BudgetScreen() {
                         Icon(
                             Icons.Rounded.Add,
                             contentDescription = "افزودن بودجه",
-                            tint = TextMid,
+                            tint = jc.textMid,
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -260,7 +258,7 @@ fun BudgetScreen() {
                 ) { text ->
                     Text(
                         text,
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = jc.ink),
                         maxLines = 1,
                     )
                 }
@@ -395,11 +393,11 @@ private fun TotalCard(
         ) {
             Text(
                 "کل بودجه",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
             )
             Text(
                 "${Fmt.faDigits(count)} دسته",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.5.sp, color = InkSoft, fontFeatureSettings = "tnum"),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.5.sp, color = jc.inkSoft, fontFeatureSettings = "tnum"),
             )
         }
         Row(
@@ -408,12 +406,12 @@ private fun TotalCard(
         ) {
             Text(
                 Fmt.money(totalAmount),
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 26.sp, lineHeight = 32.sp, color = Ink, fontFeatureSettings = "tnum"),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Black, fontSize = 26.sp, lineHeight = 32.sp, color = jc.ink, fontFeatureSettings = "tnum"),
                 modifier = Modifier.alignByBaseline(),
             )
             Text(
                 "تومان",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.inkSoft),
                 modifier = Modifier.alignByBaseline(),
             )
         }
@@ -429,7 +427,7 @@ private fun TotalCard(
             }
             Text(
                 Fmt.percent(totalPct.toDouble()),
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 11.5.sp, color = budgetBarColor(totalPct), fontFeatureSettings = "tnum"),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 11.5.sp, color = jc.budgetBarColor(totalPct), fontFeatureSettings = "tnum"),
             )
         }
         Row(
@@ -441,29 +439,29 @@ private fun TotalCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "هزینه‌شده ",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                 )
                 Text(
                     Fmt.money(totalSpent),
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Ink, fontFeatureSettings = "tnum"),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.ink, fontFeatureSettings = "tnum"),
                 )
                 Text(
                     " تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "باقی‌مانده ",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                 )
                 Text(
                     Fmt.money(remaining),
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Ink, fontFeatureSettings = "tnum"),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.ink, fontFeatureSettings = "tnum"),
                 )
                 Text(
                     " تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                 )
             }
         }
@@ -485,7 +483,7 @@ private fun BudgetCard(
 ) {
     val jc = LocalJibetColors.current
     val pct = if (item.amount > 0) (item.spent / item.amount * 100.0).toFloat() else 0f
-    val barColor = budgetBarColor(pct)
+    val barColor = jc.budgetBarColor(pct)
     val appear = remember(item.id) { Animatable(0f) }
     LaunchedEffect(item.id) {
         appear.animateTo(1f, tween(200, delayMillis = minOf(index * 40, 240), easing = EaseOut))
@@ -512,25 +510,25 @@ private fun BudgetCard(
             Column(Modifier.weight(1f)) {
                 Text(
                     item.catName ?: "دسته",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         Fmt.money(item.spent),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft, fontFeatureSettings = "tnum"),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft, fontFeatureSettings = "tnum"),
                         maxLines = 1,
                     )
                     Text(
                         " / ${Fmt.money(item.amount)}",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft, fontFeatureSettings = "tnum"),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft, fontFeatureSettings = "tnum"),
                         maxLines = 1,
                         modifier = Modifier.alpha(0.7f),
                     )
                     Text(
                         " تومان",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                         maxLines = 1,
                     )
                 }
@@ -543,14 +541,14 @@ private fun BudgetCard(
                 ) {
                     Text(
                         "حذف؟",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = jc.inkSoft),
                     )
                     Box(
                         Modifier
                             .clip(RoundedCornerShape(50))
                             .background(jc.expense)
                             .alpha(if (busy) 0.5f else 1f)
-                            .pressableScale(onClick = if (busy) null else onConfirmDelete, pressedScale = 0.95f)
+                            .pressableScale(onClick = if (busy) null else onConfirmDelete, pressedScale = 0.95f, role = Role.Button)
                             .padding(horizontal = 10.dp)
                             .height(28.dp),
                         contentAlignment = Alignment.Center,
@@ -564,15 +562,15 @@ private fun BudgetCard(
                         Modifier
                             .shadow(2.dp, RoundedCornerShape(50))
                             .clip(RoundedCornerShape(50))
-                            .background(Color.White.copy(alpha = 0.85f))
-                            .pressableScale(onClick = onCancelDelete, pressedScale = 0.95f)
+                            .background(jc.inputBg)
+                            .pressableScale(onClick = onCancelDelete, pressedScale = 0.95f, role = Role.Button)
                             .padding(horizontal = 10.dp)
                             .height(28.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             "خیر",
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = InkSoft),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = jc.inkSoft),
                         )
                     }
                 }
@@ -589,15 +587,15 @@ private fun BudgetCard(
                         Modifier
                             .shadow(2.dp, CircleShape)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.85f))
-                            .pressableScale(onClick = onEdit, pressedScale = 0.94f)
+                            .background(jc.inputBg)
+                            .pressableScale(onClick = onEdit, pressedScale = 0.94f, role = Role.Button)
                             .size(32.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             Icons.Rounded.Edit,
                             contentDescription = "ویرایش بودجه",
-                            tint = InkSoft,
+                            tint = jc.inkSoft,
                             modifier = Modifier.size(14.dp),
                         )
                     }
@@ -605,15 +603,15 @@ private fun BudgetCard(
                         Modifier
                             .shadow(2.dp, CircleShape)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.85f))
-                            .pressableScale(onClick = onAskDelete, pressedScale = 0.94f)
+                            .background(jc.inputBg)
+                            .pressableScale(onClick = onAskDelete, pressedScale = 0.94f, role = Role.Button)
                             .size(32.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             Icons.Rounded.Delete,
                             contentDescription = "حذف بودجه",
-                            tint = InkSoft,
+                            tint = jc.inkSoft,
                             modifier = Modifier.size(14.dp),
                         )
                     }
@@ -649,6 +647,7 @@ private fun BudgetSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    val jc = LocalJibetColors.current
 
     fun close() {
         scope.launch { sheetState.hide() }.invokeOnCompletion { onClose() }
@@ -672,7 +671,7 @@ private fun BudgetSheet(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(
                 "برای ${JDate.J_MONTHS[jm - 1]} ${Fmt.faDigits(jy)}",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
             )
 
             // نمایش مبلغ
@@ -687,19 +686,19 @@ private fun BudgetSheet(
             ) {
                 Text(
                     "مبلغ بودجه",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
                 )
                 // مثل dir=ltr وب: عدد سمت چپ و «تومان» سمت راست آن
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             if (amount.isEmpty()) "۰" else Fmt.money(amountValue),
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = if (amount.isEmpty()) Faint else Ink, fontFeatureSettings = "tnum"),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = if (amount.isEmpty()) jc.faint else jc.ink, fontFeatureSettings = "tnum"),
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
                             "تومان",
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = InkSoft),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.inkSoft),
                         )
                     }
                 }
@@ -709,7 +708,7 @@ private fun BudgetSheet(
             Column {
                 Text(
                     "دسته‌بندی (هزینه)",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextMid),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.textMid),
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 when {
@@ -757,17 +756,18 @@ private fun BudgetSheet(
 /** راهنمای داخل شیت — bg-white/70 rounded-2xl مثل وب */
 @Composable
 private fun SheetHint(text: String) {
+    val jc = LocalJibetColors.current
     Box(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White.copy(alpha = 0.7f))
+            .background(jc.cardSoft)
             .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text,
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 13.sp, color = InkSoft),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 13.sp, color = jc.inkSoft),
             textAlign = TextAlign.Center,
         )
     }
@@ -798,7 +798,7 @@ private fun CategoryCell(
                         Modifier
                             .shadow(2.dp, RoundedCornerShape(16.dp))
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color.White.copy(alpha = 0.85f))
+                            .background(jc.inputBg)
                     }
                 )
                 .pressableScale(onClick = onClick, pressedScale = 0.96f)
@@ -814,7 +814,7 @@ private fun CategoryCell(
             )
             Text(
                 category.name,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.5.sp, lineHeight = 16.sp, color = if (active) Color.White else TextMid),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.5.sp, lineHeight = 16.sp, color = if (active) Color.White else jc.textMid),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -850,19 +850,20 @@ private fun NavCircleButton(
     desc: String,
     onClick: () -> Unit,
 ) {
+    val jc = LocalJibetColors.current
     Box(
         Modifier
             .shadow(2.dp, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White.copy(alpha = 0.8f))
-            .pressableScale(onClick = onClick, pressedScale = 0.95f)
+            .background(jc.cardSoft)
+            .pressableScale(onClick = onClick, pressedScale = 0.95f, role = Role.Button)
             .size(36.dp),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             icon,
             contentDescription = desc,
-            tint = TextMid,
+            tint = jc.textMid,
             modifier = Modifier.size(18.dp),
         )
     }
@@ -874,6 +875,7 @@ private fun ShimmerCard(
     height: Dp,
     modifier: Modifier = Modifier,
 ) {
+    val jc = LocalJibetColors.current
     val transition = rememberInfiniteTransition(label = "shimmer")
     val alpha by transition.animateFloat(
         initialValue = 0.4f,
@@ -885,7 +887,7 @@ private fun ShimmerCard(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color(0xFFEEF1F8).copy(alpha = alpha)),
+                .background(jc.skeleton.copy(alpha = alpha)),
         )
     }
 }

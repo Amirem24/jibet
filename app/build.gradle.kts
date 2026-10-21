@@ -6,6 +6,18 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// نسخه از CI قابل پاس‌دادن است: ./gradlew -PjibetVersionCode=12 -PjibetVersionName=2.2.0
+val jibetVersionCode: Int = (project.findProperty("jibetVersionCode") as String?)?.toIntOrNull() ?: 7
+val jibetVersionName: String = (project.findProperty("jibetVersionName") as String?) ?: "2.2.0"
+
+// امضای ریلیز — از Secrets خوانده می‌شود؛ اگر نبود، ریلیز بدون امضای اختصاصی بیلد می‌شود (فقط محلی)
+val keystoreFile: String? = System.getenv("JB_KEYSTORE_PATH")
+val keystorePass: String? = System.getenv("JB_STORE_PASSWORD")
+val keyAliasName: String? = System.getenv("JB_KEY_ALIAS")
+val keyPass: String? = System.getenv("JB_KEY_PASSWORD")
+val hasReleaseSigning = !keystoreFile.isNullOrBlank() && !keystorePass.isNullOrBlank() &&
+    !keyAliasName.isNullOrBlank() && !keyPass.isNullOrBlank()
+
 android {
     namespace = "com.jibet.app"
     compileSdk = 35
@@ -14,8 +26,19 @@ android {
         applicationId = "com.jibet.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "2.1.2"
+        versionCode = jibetVersionCode
+        versionName = jibetVersionName
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(keystoreFile!!)
+                storePassword = keystorePass
+                keyAlias = keyAliasName
+                keyPassword = keyPass
+            }
+        }
     }
 
     buildTypes {
@@ -23,6 +46,9 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
@@ -33,13 +59,17 @@ android {
         jvmTarget = "17"
         freeCompilerArgs += listOf(
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-            "-opt-in=androidx.compose.animation.ExperimentalAnimationApi"
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
         )
     }
     buildFeatures { compose = true; buildConfig = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     lint { abortOnError = false }
+}
+
+// Room — خروجی اسکیمای هر نسخه در ریپو (پیش‌نیاز تست مهاجرت با MigrationTestHelper)
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {

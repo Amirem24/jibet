@@ -2,21 +2,58 @@ package com.jibet.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-/* پالت جیبت — قرارداد یکسان با globals.css نسخه وب */
+/* پالت جیبت — قرارداد یکسان با globals.css نسخه وب.
+   هر رنگ یک جفت روشن/تیره دارد؛ توکن‌ها از طریق JibetColors توزیع می‌شوند. */
 
-val Expense = Color(0xFFF26D6D)
-val ExpenseSoft = Color(0xFFFDEAEA)
-val Income = Color(0xFF2FBF83)
-val IncomeSoft = Color(0xFFE2F6EC)
-val Ink = Color(0xFF232B3B)
-val InkSoft = Color(0xFF8A92A6)
-val TextMid = Color(0xFF5A6478)
-val Faint = Color(0xFFB4BAC8)
-val BgA = Color(0xFFEEF2FB)
-val BgB = Color(0xFFE9EDF8)
-val CardBg = Color(0xFFFFFFFF)
-val Divider = Color(0xFFF1F3F9)
-val ChartTrack = Color(0x1A8A92A6)
+// ---------- روشن ----------
+val ExpenseL = Color(0xFFF26D6D)
+val ExpenseSoftL = Color(0xFFFDEAEA)
+val IncomeL = Color(0xFF2FBF83)
+val IncomeSoftL = Color(0xFFE2F6EC)
+val InkL = Color(0xFF232B3B)
+val InkSoftL = Color(0xFF8A92A6)
+val TextMidL = Color(0xFF5A6478)
+val FaintL = Color(0xFFB4BAC8)
+val BgAL = Color(0xFFEEF2FB)
+val BgBL = Color(0xFFE9EDF8)
+val CardL = Color(0xFFFFFFFF)
+val CardSoftL = Color(0xCCFFFFFF)      // white 80%
+val InputBgL = Color(0xD9FFFFFF)       // white 85%
+val IconBubbleBgL = Color(0xFFF1F3F9)
+val DividerL = Color(0xFFF1F3F9)
+val BorderL = Color(0xFFE3E8F4)
+val GlassTopL = Color(0xEBFFFFFF)      // white 92%
+val GlassBottomL = Color(0x9EFFFFFF)   // white 62%
+val GlassBorderL = Color(0xE6FFFFFF)   // white 90%
+val SkeletonL = Color(0xFFE4E8F4)
+val IconMutedL = Color(0xFFA7AEC0)
+val ScrimL = Color(0x730F1420)         // تیره ۴۵٪
+val TrackL = Color(0x1A8A92A6)
+
+// ---------- تیره (هم‌خانواده با .dark وب) ----------
+val ExpenseD = Color(0xFFFF8080)
+val ExpenseSoftD = Color(0x29FF8080)   // ۱۶٪ روی کارت تیره
+val IncomeD = Color(0xFF34CC8C)
+val IncomeSoftD = Color(0x2934CC8C)
+val InkD = Color(0xFFEEF1F9)
+val InkSoftD = Color(0xFF9AA3B8)
+val TextMidD = Color(0xFFB7C0D4)
+val FaintD = Color(0xFF6E7891)
+val BgAD = Color(0xFF0F1420)
+val BgBD = Color(0xFF131A2A)
+val CardD = Color(0xFF171E2E)
+val CardSoftD = Color(0xFF1C2436)
+val InputBgD = Color(0xFF1C2436)
+val IconBubbleBgD = Color(0xFF222B40)
+val DividerD = Color(0xFF263046)
+val BorderD = Color(0xFF263046)
+val GlassTopD = Color(0x14FFFFFF)      // سفید ۸٪
+val GlassBottomD = Color(0x05FFFFFF)   // سفید ۲٪
+val GlassBorderD = Color(0x14FFFFFF)
+val SkeletonD = Color(0xFF222B40)
+val IconMutedD = Color(0xFF7C86A0)
+val ScrimD = Color(0x99000000)         // مشکی ۶۰٪
+val TrackD = Color(0x1A9AA3B8)
 
 data class Accent(val key: String, val a: Color, val b: Color)
 
@@ -29,9 +66,9 @@ val ACCENTS = mapOf(
 
 fun accentOf(key: String?): Accent = ACCENTS[key] ?: ACCENTS.getValue("blue")
 
-/** رنگ نوار پیشرفت بودجه — مثل budgetBarColor وب */
-fun budgetBarColor(pct: Float): Color = when {
-    pct < 70f -> Income
-    pct < 100f -> Color(0xFFF5A524)
-    else -> Expense
+/** رنگ نوار پیشرفت بودجه — مثل budgetBarColor وب (نسخه تم‌آگاه) */
+fun JibetColors.budgetBarColor(pct: Float): Color = when {
+    pct < 70f -> income
+    pct < 100f -> if (isDark) Color(0xFFFFBE4D) else Color(0xFFF5A524)
+    else -> expense
 }

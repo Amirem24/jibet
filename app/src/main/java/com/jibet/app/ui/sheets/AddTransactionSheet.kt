@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -73,11 +74,7 @@ import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetInputShape
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
 import com.jibet.app.util.JDate
@@ -215,24 +212,24 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
         ) {
             Text(
                 "مبلغ",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
             )
             // ترتیب فرزندان معکوس است تا چیدمان LTR وب (عدد سمت چپ، «تومان» سمت راست) بازتولید شود
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
                 )
                 Spacer(Modifier.width(8.dp))
                 if (amountStr.isEmpty()) {
                     Text(
                         "۰",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Faint),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = jc.faint),
                     )
                 } else {
                     Text(
                         Fmt.money(amount),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = jc.ink),
                     )
                 }
             }
@@ -246,14 +243,14 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
                         .weight(1f)
                         .shadow(2.dp, RoundedCornerShape(50), spotColor = Color(0x0D232B3B), ambientColor = Color.Transparent)
                         .clip(RoundedCornerShape(50))
-                        .background(Color.White.copy(alpha = 0.8f))
+                        .background(jc.cardSoft)
                         .pressableScale(onClick = { amountStr = q.toString() })
                         .height(32.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         Fmt.money(q.toLong()),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TextMid),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.textMid),
                     )
                 }
             }
@@ -263,7 +260,7 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
         Column {
             Text(
                 "دسته‌بندی",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextMid),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.textMid),
                 modifier = Modifier.padding(bottom = 8.dp),
             )
             if (cats.isEmpty()) {
@@ -271,13 +268,13 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White.copy(alpha = 0.7f))
+                        .background(jc.cardSoft)
                         .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         "دسته‌ای برای این نوع وجود ندارد",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 13.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 13.sp, color = jc.inkSoft),
                         textAlign = TextAlign.Center,
                     )
                 }
@@ -299,26 +296,67 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
             }
         }
 
-        // حساب
+        // حساب — وقتی هیچ حسابی نیست، کارت شیشه‌ای راهنما به‌جای ردیف چیپ‌ها
         Column {
             Text(
                 "حساب",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextMid),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.textMid),
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                accounts.forEach { a ->
-                    AccountChip(
-                        account = a,
-                        active = a.id == accountId,
-                        onClick = { accountId = a.id },
-                    )
+            if (accounts.isEmpty()) {
+                val ctx = LocalContext.current
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .jibetCard(RoundedCornerShape(16.dp))
+                        .padding(14.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Icon(
+                            Icons.Rounded.AccountBalanceWallet,
+                            contentDescription = null,
+                            tint = jc.inkSoft,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text(
+                            "هیچ حسابی نداری — ابتدا یک حساب بساز",
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.ink),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Brush.linearGradient(listOf(jc.accentB, jc.accentA)))
+                                .pressableScale(onClick = {
+                                    Toast.makeText(ctx, "از صفحهٔ حساب‌ها یک حساب اضافه کنید", Toast.LENGTH_SHORT).show()
+                                })
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                "ساخت حساب",
+                                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White),
+                            )
+                        }
+                    }
+                }
+            } else {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(bottom = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    accounts.forEach { a ->
+                        AccountChip(
+                            account = a,
+                            active = a.id == accountId,
+                            onClick = { accountId = a.id },
+                        )
+                    }
                 }
             }
         }
@@ -327,7 +365,7 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
         Column {
             Text(
                 "تاریخ",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextMid),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.textMid),
                 modifier = Modifier.padding(bottom = 8.dp),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -375,6 +413,7 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
 /** سلول دسته‌بندی در گرید ۳ ستونه */
 @Composable
 private fun RowScope.CategoryCell(c: CategoryEntity, active: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     val color = parseColor(c.colorHex)
     Column(
         Modifier
@@ -387,7 +426,7 @@ private fun RowScope.CategoryCell(c: CategoryEntity, active: Boolean, onClick: (
                 }
             )
             .clip(RoundedCornerShape(16.dp))
-            .background(if (active) color else Color.White.copy(alpha = 0.85f))
+            .background(if (active) color else jc.inputBg)
             .pressableScale(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -406,7 +445,7 @@ private fun RowScope.CategoryCell(c: CategoryEntity, active: Boolean, onClick: (
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.5.sp,
                 lineHeight = 16.sp,
-                color = if (active) Color.White else TextMid,
+                color = if (active) Color.White else jc.textMid,
             ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -418,6 +457,7 @@ private fun RowScope.CategoryCell(c: CategoryEntity, active: Boolean, onClick: (
 /** چیپ انتخاب حساب */
 @Composable
 private fun AccountChip(account: AccountRow, active: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     val color = parseColor(account.colorHex)
     Row(
         Modifier
@@ -429,7 +469,7 @@ private fun AccountChip(account: AccountRow, active: Boolean, onClick: () -> Uni
                 }
             )
             .clip(RoundedCornerShape(50))
-            .background(if (active) color else Color.White.copy(alpha = 0.85f))
+            .background(if (active) color else jc.inputBg)
             .pressableScale(onClick = onClick)
             // pl-3.5/pr-1.5 وب = پدینگ فیزیکی؛ در RTL استارت = راست (۶dp) و انته = چپ (۱۴dp)
             .padding(start = 6.dp, top = 6.dp, end = 14.dp, bottom = 6.dp),
@@ -448,7 +488,7 @@ private fun AccountChip(account: AccountRow, active: Boolean, onClick: () -> Uni
                 fontFamily = Vazir,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.5.sp,
-                color = if (active) Color.White else TextMid,
+                color = if (active) Color.White else jc.textMid,
             ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -460,7 +500,7 @@ private fun AccountChip(account: AccountRow, active: Boolean, onClick: () -> Uni
 @Composable
 private fun RowScope.DateChip(offset: Int, active: Boolean, onClick: () -> Unit) {
     val jc = LocalJibetColors.current
-    val color = if (active) Color(0xFF3D55C8) else InkSoft
+    val color = if (active) Color(0xFF3D55C8) else jc.inkSoft
     val date = LocalDate.now().minusDays(offset.toLong())
     Row(
         Modifier
@@ -473,7 +513,7 @@ private fun RowScope.DateChip(offset: Int, active: Boolean, onClick: () -> Unit)
                 }
             )
             .clip(RoundedCornerShape(16.dp))
-            .background(if (active) jc.accentA.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.85f))
+            .background(if (active) jc.accentA.copy(alpha = 0.12f) else jc.inputBg)
             .pressableScale(onClick = onClick)
             .height(40.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -573,7 +613,7 @@ internal fun SheetTextInput(
     BasicTextField(
         value = value,
         onValueChange = { if (it.length <= maxLength) onValueChange(it) },
-        textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
+        textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.ink),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         singleLine = true,
         cursorBrush = SolidColor(jc.accentA),
@@ -591,7 +631,7 @@ internal fun SheetTextInput(
                 if (value.isEmpty() && placeholder.isNotEmpty()) {
                     Text(
                         placeholder,
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.faint),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

@@ -99,10 +99,13 @@ class JibetRepository(
         to: Long,
         limit: Int,
         offset: Int,
-    ): Flow<TxPage> =
-        combine(
+    ): Flow<TxPage> {
+        // جستجوی مبلغ: فقط وقتی عبارت جستجو رقم دارد، روی عدد (بدون جداکننده) هم LIKE می‌زنیم
+        val qNum = com.jibet.app.util.Fmt.digitsOnly(q)
+        return combine(
             dao.watchTxPage(
                 q = q,
+                qNum = qNum,
                 kindIsAll = kind == null,
                 kind = kind ?: Kind.EXPENSE,
                 accountId = accountId,
@@ -114,6 +117,7 @@ class JibetRepository(
             ),
             dao.watchTxTotals(
                 q = q,
+                qNum = qNum,
                 kindIsAll = kind == null,
                 kind = kind ?: Kind.EXPENSE,
                 accountId = accountId,
@@ -122,6 +126,7 @@ class JibetRepository(
                 to = to,
             ),
         ) { items, totals -> TxPage(items, totals.total, totals.income, totals.expense, offset) }
+    }
 
     /* ================= گزارش ================= */
 
@@ -260,11 +265,17 @@ class JibetRepository(
 
     suspend fun updateAccount(a: AccountEntity) = dao.updateAccount(a)
 
+    /** حذف حساب — فقط بدون تراکنش و بدون قاعده‌ی تکراری؛ اتمیک */
     suspend fun deleteAccount(a: AccountEntity) {
-        if (dao.countAccountTx(a.id) > 0) {
-            throw IllegalStateException("این حساب تراکنش دارد؛ ابتدا تراکنش‌هایش را حذف کنید")
+        db.withTransactionCompat {
+            if (dao.countAccountTx(a.id) > 0) {
+                throw IllegalStateException("این حساب تراکنش دارد؛ ابتدا تراکنش‌هایش را حذف کنید")
+            }
+            if (dao.countAccountRecurring(a.id) > 0) {
+                throw IllegalStateException("این حساب در تراکنش‌های تکراری استفاده شده؛ ابتدا آن قواعد را حذف یا ویرایش کنید")
+            }
+            dao.deleteAccount(a)
         }
-        dao.deleteAccount(a)
     }
 
     suspend fun addCategory(name: String, kind: Kind, colorHex: String, icon: String): Long =
@@ -280,11 +291,18 @@ class JibetRepository(
 
     suspend fun updateCategory(c: CategoryEntity) = dao.updateCategory(c)
 
+    /** حذف دسته — فقط بدون تراکنش و بدون قاعده‌ی تکراری؛ بودجه‌های همین دسته هم پاک می‌شوند؛ اتمیک */
     suspend fun deleteCategory(c: CategoryEntity) {
-        if (dao.countCategoryTx(c.id) > 0) {
-            throw IllegalStateException("این دسته تراکنش دارد و قابل حذف نیست")
+        db.withTransactionCompat {
+            if (dao.countCategoryTx(c.id) > 0) {
+                throw IllegalStateException("این دسته تراکنش دارد و قابل حذف نیست")
+            }
+            if (dao.countCategoryRecurring(c.id) > 0) {
+                throw IllegalStateException("این دسته در تراکنش‌های تکراری استفاده شده؛ ابتدا آن قواعد را حذف یا ویرایش کنید")
+            }
+            dao.deleteBudgetsForCategory(c.id)
+            dao.deleteCategory(c)
         }
-        dao.deleteCategory(c)
     }
 
     suspend fun addTx(
@@ -574,8 +592,10 @@ class JibetRepository(
     /* ================= پردازش تراکنش‌های تکراری ================= */
 
     /** ثبت تراکنش‌های سررسیدشده و پیش‌بردن سررسید بعدی
-     *  در شروع برنامه + هر ۱۵ دقیقه (نگاه JibetApp) اجرا می‌شود */
-    suspend fun processDueRecurring() {
+     *  در شروع برنامه + هر ۱۵ دقیقه (نگاه JibetApp) اجرا می‌شود؛
+     *  کل پردازش داخل یک تراکنش است تا اگر پروسه وسط کار کشته شود،
+     *  هیچ تراکنشی دوباره ثبت نشود (nextDate و insertها هم‌سرنوشت‌اند). */
+    suspend fun processDueRecurring() = db.withTransactionCompat {
         val now = System.currentTimeMillis()
         for (r in dao.activeRecurrings()) {
             var next = r.nextDate

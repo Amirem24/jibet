@@ -123,11 +123,7 @@ import com.jibet.app.ui.components.accentGradient
 import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
 import com.jibet.app.util.PRESET_ACCOUNTS
@@ -319,7 +315,7 @@ private fun StepHeader(step: Int, busy: Boolean, onSkip: () -> Unit) {
     ) {
         Text(
             "${Fmt.faDigits(displayStep)} از ${Fmt.faDigits(TOTAL_STEPS)}",
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = Ink),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = jc.ink),
             modifier = Modifier.widthIn(min = 56.dp),
         )
         Row(
@@ -338,7 +334,7 @@ private fun StepHeader(step: Int, busy: Boolean, onSkip: () -> Unit) {
                     Modifier.background(accentGradient())
                 } else {
                     Modifier.background(
-                        if (i < displayStep) jc.accentA.copy(alpha = 0.35f) else Color(0x1A232B3B),
+                        if (i < displayStep) jc.accentA.copy(alpha = 0.35f) else jc.ink.copy(alpha = 0.10f),
                     )
                 }
                 Box(
@@ -361,7 +357,7 @@ private fun StepHeader(step: Int, busy: Boolean, onSkip: () -> Unit) {
                 ) {
                     Text(
                         "رد شدن",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
                         modifier = Modifier
                             .heightIn(min = 40.dp)
                             .padding(horizontal = 8.dp)
@@ -393,6 +389,7 @@ private val BUBBLES = listOf(
 
 @Composable
 private fun SplashStep(onStart: () -> Unit) {
+    val jc = LocalJibetColors.current
     Box(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.matchParentSize()) {
             val w = maxWidth
@@ -462,7 +459,7 @@ private fun SplashStep(onStart: () -> Unit) {
                             fontWeight = FontWeight.Black,
                             fontSize = 36.sp,
                             lineHeight = 45.sp,
-                            color = Ink,
+                            color = jc.ink,
                         ),
                         textAlign = TextAlign.Center,
                     )
@@ -473,13 +470,13 @@ private fun SplashStep(onStart: () -> Unit) {
                             fontWeight = FontWeight.Medium,
                             fontSize = 13.sp,
                             letterSpacing = 0.35.em,
-                            color = InkSoft,
+                            color = jc.inkSoft,
                         ),
                         modifier = Modifier.padding(top = 4.dp),
                     )
                     Text(
                         "مدیریت مالی، ساده‌تر از همیشه",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = TextMid),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.textMid),
                         modifier = Modifier.padding(top = 12.dp),
                         textAlign = TextAlign.Center,
                     )
@@ -498,7 +495,7 @@ private fun SplashStep(onStart: () -> Unit) {
                 ) {
                     Text(
                         "شروع",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = jc.ink),
                     )
                 }
             }
@@ -510,6 +507,7 @@ private fun SplashStep(onStart: () -> Unit) {
 
 @Composable
 private fun WelcomeStep(onNext: () -> Unit) {
+    val jc = LocalJibetColors.current
     Column(Modifier.fillMaxSize()) {
         Box(
             Modifier
@@ -529,7 +527,7 @@ private fun WelcomeStep(onNext: () -> Unit) {
                     ) {
                         Text(
                             "به جیبت خوش اومدید",
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Ink),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = jc.ink),
                             textAlign = TextAlign.Center,
                         )
                         Text(
@@ -539,7 +537,7 @@ private fun WelcomeStep(onNext: () -> Unit) {
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 14.sp,
                                 lineHeight = 28.sp,
-                                color = InkSoft,
+                                color = jc.inkSoft,
                             ),
                             textAlign = TextAlign.Center,
                             modifier = Modifier
@@ -764,6 +762,7 @@ private fun AccountsStep(
     onNext: () -> Unit,
     onBack: () -> Unit,
 ) {
+    val jc = LocalJibetColors.current
     Column(Modifier.fillMaxSize()) {
         Column(
             Modifier
@@ -775,12 +774,12 @@ private fun AccountsStep(
         ) {
             Text(
                 "حساب‌های خود را اضافه کنید",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = jc.ink),
                 modifier = Modifier.padding(top = 8.dp),
             )
             Text(
                 "حساب‌هایی که با آن‌ها پول خرج و دریافت می‌کنی را انتخاب کن و موجودی اولیه‌شان را وارد کن.",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 24.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 24.sp, color = jc.inkSoft),
                 modifier = Modifier.padding(top = 4.dp),
             )
 
@@ -821,7 +820,7 @@ private fun AccountsStep(
             ) {
                 Text(
                     "بازگشت",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = jc.inkSoft),
                 )
             }
             AccentButton(
@@ -854,7 +853,7 @@ private fun AccountCard(
                 ambientColor = Color.Transparent,
             )
             .clip(shape)
-            .background(Color.White)
+            .background(jc.card)
             .then(if (selected) Modifier.border(2.dp, jc.accentA, shape) else Modifier),
     ) {
         Row(
@@ -894,7 +893,7 @@ private fun AccountCard(
             Column(Modifier.weight(1f)) {
                 Text(
                     account.name,
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ink),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jc.ink),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -908,7 +907,7 @@ private fun AccountCard(
             Icon(
                 Icons.Rounded.ChevronLeft,
                 contentDescription = null,
-                tint = if (selected) InkSoft else Faint,
+                tint = if (selected) jc.inkSoft else jc.faint,
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -921,7 +920,7 @@ private fun AccountCard(
             Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp)) {
                 Text(
                     "موجودی اولیه",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TextMid),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.textMid),
                     modifier = Modifier.padding(bottom = 6.dp),
                 )
                 BalanceField(
@@ -964,10 +963,10 @@ private fun BalanceField(
             .fillMaxWidth()
             .height(48.dp)
             .clip(shape)
-            .background(Color.White.copy(alpha = 0.85f))
+            .background(jc.inputBg)
             .border(
                 width = if (focused) 2.dp else 1.dp,
-                color = if (focused) jc.accentA else InkSoft.copy(alpha = 0.18f),
+                color = if (focused) jc.accentA else jc.inkSoft.copy(alpha = 0.18f),
                 shape = shape,
             ),
     ) {
@@ -988,7 +987,7 @@ private fun BalanceField(
                 onValueChange(input.text)
             },
             singleLine = true,
-            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
+            textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.ink),
             cursorBrush = SolidColor(jc.accentA),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             interactionSource = interaction,
@@ -1001,7 +1000,7 @@ private fun BalanceField(
         if (fieldValue.text.isEmpty()) {
             Text(
                 "مثلاً " + Fmt.money(500000.0),
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.faint),
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .padding(start = 16.dp),
@@ -1009,7 +1008,7 @@ private fun BalanceField(
         }
         Text(
             "تومان",
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = InkSoft),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 16.dp),
@@ -1040,12 +1039,12 @@ private fun CategoriesStep(
         ) {
             Text(
                 "دسته‌بندی‌ها را شخصی‌سازی کنید",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = jc.ink),
                 modifier = Modifier.padding(top = 8.dp),
             )
             Text(
                 "دسته‌های پرکاربردت را انتخاب کن؛ بعداً هم می‌توانی از بخش دسته‌بندی‌ها دسته جدید بسازی.",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 24.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 24.sp, color = jc.inkSoft),
                 modifier = Modifier.padding(top = 4.dp),
             )
 
@@ -1058,7 +1057,7 @@ private fun CategoriesStep(
             ) {
                 Text(
                     "${Fmt.faDigits(selected.size)} دسته انتخاب شده",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TextMid),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.textMid),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -1102,7 +1101,7 @@ private fun CategoriesStep(
             ) {
                 Text(
                     "بازگشت",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = jc.inkSoft),
                 )
             }
             AccentButton(
@@ -1118,6 +1117,7 @@ private fun CategoriesStep(
 /** دکمه‌ی شیشه‌ای کوچک بالای لیست دسته‌ها */
 @Composable
 private fun GlassPill(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     Row(
         Modifier
             .jibetGlass(shape = RoundedCornerShape(50))
@@ -1130,12 +1130,12 @@ private fun GlassPill(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
         Icon(
             icon,
             contentDescription = null,
-            tint = TextMid,
+            tint = jc.textMid,
             modifier = Modifier.size(13.dp),
         )
         Text(
             label,
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = TextMid),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = jc.textMid),
         )
     }
 }
@@ -1148,6 +1148,7 @@ private fun CategorySection(
     selected: Set<String>,
     onToggle: (String) -> Unit,
 ) {
+    val jc = LocalJibetColors.current
     val selCount = items.count { it.key in selected }
     Column(Modifier.padding(top = 16.dp)) {
         Row(
@@ -1163,11 +1164,11 @@ private fun CategorySection(
             )
             Text(
                 title,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = jc.ink),
             )
             Text(
                 "${Fmt.faDigits(selCount)} از ${Fmt.faDigits(items.size)}",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.sp, color = jc.inkSoft),
             )
         }
         FlowRow(
@@ -1197,14 +1198,15 @@ private fun CategoryChip(
     selected: Boolean,
     onToggle: () -> Unit,
 ) {
+    val jc = LocalJibetColors.current
     val shape = RoundedCornerShape(50)
     Row(
         Modifier
             .clip(shape)
-            .background(if (selected) color.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.82f))
+            .background(if (selected) color.copy(alpha = 0.08f) else jc.cardSoft)
             .border(
                 width = if (selected) 1.5.dp else 1.dp,
-                color = if (selected) color.copy(alpha = 0.35f) else InkSoft.copy(alpha = 0.16f),
+                color = if (selected) color.copy(alpha = 0.35f) else jc.inkSoft.copy(alpha = 0.16f),
                 shape = shape,
             )
             .pressableScale(onClick = onToggle, pressedScale = 0.97f)
@@ -1219,7 +1221,7 @@ private fun CategoryChip(
                 fontFamily = Vazir,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 fontSize = 13.sp,
-                color = if (selected) Ink else TextMid,
+                color = if (selected) jc.ink else jc.textMid,
             ),
         )
     }
@@ -1287,7 +1289,7 @@ private fun ReadyStep(busy: Boolean, onFinish: () -> Unit) {
                     ) {
                         Text(
                             "آماده‌اید!",
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Ink),
+                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = jc.ink),
                             textAlign = TextAlign.Center,
                         )
                         Text(
@@ -1297,7 +1299,7 @@ private fun ReadyStep(busy: Boolean, onFinish: () -> Unit) {
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 14.sp,
                                 lineHeight = 28.sp,
-                                color = InkSoft,
+                                color = jc.inkSoft,
                             ),
                             textAlign = TextAlign.Center,
                             modifier = Modifier

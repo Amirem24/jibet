@@ -17,11 +17,23 @@ sealed class BootState {
     data object Done : BootState()
 }
 
+/** حالت نمایش برنامه — پیش‌فرض: هم‌راستا با دستگاه */
+enum class ThemeMode(val key: String) {
+    SYSTEM("system"),
+    LIGHT("light"),
+    DARK("dark");
+
+    companion object {
+        fun fromKey(k: String?): ThemeMode = entries.firstOrNull { it.key == k } ?: SYSTEM
+    }
+}
+
 class SettingsRepository(private val context: Context) {
 
     private object Keys {
         val ONBOARDED = booleanPreferencesKey("onboarded")
         val ACCENT = stringPreferencesKey("accent")
+        val THEME = stringPreferencesKey("theme")
     }
 
     /** null هرگز منتشر نمی‌شود؛ کلید نبود = false (آموزش اولیه لازم) */
@@ -38,5 +50,12 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setAccent(key: String) {
         context.dataStore.edit { it[Keys.ACCENT] = key }
+    }
+
+    /** حالت روشن/تاریک/سیستمی */
+    val themeMode: Flow<ThemeMode> = context.dataStore.data.map { p -> ThemeMode.fromKey(p[Keys.THEME]) }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { it[Keys.THEME] = mode.key }
     }
 }

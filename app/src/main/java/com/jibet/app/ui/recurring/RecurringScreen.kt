@@ -95,12 +95,7 @@ import com.jibet.app.ui.components.jibetCard
 import com.jibet.app.ui.components.jibetInputShape
 import com.jibet.app.ui.components.parseColor
 import com.jibet.app.ui.components.pressableScale
-import com.jibet.app.ui.theme.ExpenseSoft
-import com.jibet.app.ui.theme.Faint
-import com.jibet.app.ui.theme.Ink
-import com.jibet.app.ui.theme.InkSoft
 import com.jibet.app.ui.theme.LocalJibetColors
-import com.jibet.app.ui.theme.TextMid
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.util.Fmt
 import com.jibet.app.util.FREQUENCY_LABELS
@@ -213,6 +208,7 @@ fun RecurringScreen(onBack: () -> Unit) {
     val vm: RecurringViewModel = viewModel()
     val recurrings by vm.recurrings.collectAsState()
     val scope = rememberCoroutineScope()
+    val jc = LocalJibetColors.current
 
     var sheetOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<RecurringRow?>(null) }
@@ -235,7 +231,7 @@ fun RecurringScreen(onBack: () -> Unit) {
                     Icon(
                         Icons.Rounded.Add,
                         contentDescription = "افزودن تراکنش تکراری",
-                        tint = TextMid,
+                        tint = jc.textMid,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -250,12 +246,12 @@ fun RecurringScreen(onBack: () -> Unit) {
             Icon(
                 Icons.Rounded.Repeat,
                 contentDescription = null,
-                tint = InkSoft,
+                tint = jc.inkSoft,
                 modifier = Modifier.size(14.dp),
             )
             Text(
                 "این تراکنش‌ها خودکار در سررسید ثبت می‌شوند.",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = InkSoft),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = jc.inkSoft),
             )
         }
 
@@ -313,6 +309,7 @@ fun RecurringScreen(onBack: () -> Unit) {
 /** ردیف یک تراکنش تکراری */
 @Composable
 private fun RecurringRowItem(r: RecurringRow, index: Int, onEdit: () -> Unit, onToggle: () -> Unit) {
+    val jc = LocalJibetColors.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -331,7 +328,7 @@ private fun RecurringRowItem(r: RecurringRow, index: Int, onEdit: () -> Unit, on
         Column(Modifier.weight(1f)) {
             Text(
                 r.title,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.5.sp, color = Ink),
+                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 14.5.sp, color = jc.ink),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -343,13 +340,13 @@ private fun RecurringRowItem(r: RecurringRow, index: Int, onEdit: () -> Unit, on
                 Icon(
                     Icons.Rounded.CalendarMonth,
                     contentDescription = null,
-                    tint = InkSoft,
+                    tint = jc.inkSoft,
                     modifier = Modifier.size(12.dp),
                 )
                 Text(
                     "${FREQUENCY_LABELS[r.frequency.name] ?: r.frequency.name} · سررسید بعدی: " +
                         Fmt.faDigits(JDate.formatJalaliDate(r.nextDate, JDate.Style.SHORT)),
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = jc.inkSoft),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -458,12 +455,12 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
                 if (categories.isEmpty()) {
                     Text(
                         "دسته‌ای برای این نوع وجود ندارد",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = jc.inkSoft),
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color.White.copy(alpha = 0.7f))
+                            .background(jc.cardSoft)
                             .padding(vertical = 16.dp),
                     )
                 } else {
@@ -549,12 +546,12 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
                     Icon(
                         Icons.Rounded.CalendarMonth,
                         contentDescription = null,
-                        tint = InkSoft,
+                        tint = jc.inkSoft,
                         modifier = Modifier.size(13.dp),
                     )
                     Text(
                         "اولین ثبت: ${Fmt.faDigits(JDate.formatJalaliDate(startDate, JDate.Style.LONG))}",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = InkSoft),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, color = jc.inkSoft),
                     )
                 }
             }
@@ -613,6 +610,7 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
 /** سلول دسته‌بندی — گرید ۳ ستونه مثل وب */
 @Composable
 private fun CategoryCell(c: CategoryEntity, active: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val jc = LocalJibetColors.current
     val cc = parseColor(c.colorHex)
     Column(
         modifier
@@ -623,7 +621,7 @@ private fun CategoryCell(c: CategoryEntity, active: Boolean, onClick: () -> Unit
                 ambientColor = Color.Transparent,
             )
             .clip(RoundedCornerShape(16.dp))
-            .background(if (active) cc else Color.White.copy(alpha = 0.85f))
+            .background(if (active) cc else jc.inputBg)
             .pressableScale(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -641,7 +639,7 @@ private fun CategoryCell(c: CategoryEntity, active: Boolean, onClick: () -> Unit
                 fontFamily = Vazir,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.5.sp,
-                color = if (active) Color.White else TextMid,
+                color = if (active) Color.White else jc.textMid,
             ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -652,6 +650,7 @@ private fun CategoryCell(c: CategoryEntity, active: Boolean, onClick: () -> Unit
 /** چیپ حساب افقی مثل وب */
 @Composable
 private fun AccountChip(name: String, icon: String, colorHex: String, active: Boolean, onClick: () -> Unit) {
+    val jc = LocalJibetColors.current
     val cc = parseColor(colorHex)
     Row(
         Modifier
@@ -662,7 +661,7 @@ private fun AccountChip(name: String, icon: String, colorHex: String, active: Bo
                 ambientColor = Color.Transparent,
             )
             .clip(RoundedCornerShape(50))
-            .background(if (active) cc else Color.White.copy(alpha = 0.85f))
+            .background(if (active) cc else jc.inputBg)
             .pressableScale(onClick = onClick)
             .padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -680,7 +679,7 @@ private fun AccountChip(name: String, icon: String, colorHex: String, active: Bo
                 fontFamily = Vazir,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.5.sp,
-                color = if (active) Color.White else TextMid,
+                color = if (active) Color.White else jc.textMid,
             ),
             maxLines = 1,
         )
@@ -749,7 +748,7 @@ private fun TwoStepDeleteButton(armed: Boolean, label: String, armedLabel: Strin
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(if (armed) jc.expense else ExpenseSoft)
+            .background(if (armed) jc.expense else jc.expenseSoft)
             .pressableScale(onClick = onClick)
             .height(44.dp),
         horizontalArrangement = Arrangement.Center,
@@ -777,6 +776,7 @@ private fun TwoStepDeleteButton(armed: Boolean, label: String, armedLabel: Strin
 /** کارت نمایش مبلغ با برچسب — مثل کارت‌های وب با dir=ltr */
 @Composable
 private fun AmountDisplayCard(label: String, amount: String) {
+    val jc = LocalJibetColors.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -788,25 +788,25 @@ private fun AmountDisplayCard(label: String, amount: String) {
     ) {
         Text(
             label,
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkSoft),
+            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
         )
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (amount.isEmpty()) {
                     Text(
                         "۰",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Faint),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = jc.faint),
                     )
                 } else {
                     Text(
                         Fmt.money(amount.toDoubleOrNull() ?: 0.0),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Ink),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = jc.ink),
                     )
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = InkSoft),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.inkSoft),
                 )
             }
         }
@@ -821,10 +821,11 @@ private fun JibetTextInput(
     placeholder: String,
     maxLength: Int = 40,
 ) {
+    val jc = LocalJibetColors.current
     BasicTextField(
         value = value,
         onValueChange = { onValueChange(it.take(maxLength)) },
-        textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
+        textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.ink),
         cursorBrush = SolidColor(LocalJibetColors.current.accentA),
         modifier = Modifier.fillMaxWidth(),
         decorationBox = { inner ->
@@ -832,7 +833,7 @@ private fun JibetTextInput(
                 if (value.isEmpty()) {
                     Text(
                         placeholder,
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
+                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.faint),
                         maxLines = 1,
                     )
                 }
