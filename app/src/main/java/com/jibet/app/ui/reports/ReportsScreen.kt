@@ -289,10 +289,13 @@ fun ReportsScreen(onBack: () -> Unit) {
                         },
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    // دونات + راهنمای دسته‌ها
+                    // دونات + راهنمای دسته‌ها — دونات دقیقاً وسط کارت
                     Box(Modifier.fillMaxWidth().jibetCard().padding(20.dp)) {
                         if (total > 0) {
-                            Column(Modifier.fillMaxWidth()) {
+                            Column(
+                                Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
                                 Donut(
                                     slices = data.byCategory.map { DonutSlice(color = it.color, pct = it.pct) },
                                     total = total,
@@ -332,8 +335,8 @@ private fun Donut(
     kind: Kind,
 ) {
     val jc = LocalJibetColors.current
-    // هندسه‌ی دونات مثل وب: circle با r=54 و strokeWidth=22 در بوم ۱۴۰×۱۴۰
-    val circumference = 2f * PI.toFloat() * 54f
+    // هندسه‌ی دونات مثل وب (r=54/stroke=22 در ۱۴۰) با مقیاس ۱٫۲۶× — بزرگ‌تر برای خوانایی موبایل
+    val circumference = 2f * PI.toFloat() * 68f
     val minSliceDeg = 360f / circumference // ۱ واحد SVG ≈ ۱٫۰۶ درجه
     val gapDeg = if (slices.size > 1) 3f else 0f
     val signature = remember(slices) { slices.joinToString("|") { "${it.pct}-${it.color}" } }
@@ -359,7 +362,7 @@ private fun Donut(
         }
     }
 
-    Box(Modifier.size(140.dp)) {
+    Box(Modifier.size(176.dp)) {
         Canvas(
             Modifier
                 .fillMaxSize()
@@ -370,8 +373,8 @@ private fun Donut(
                     alpha = reveal.value
                 },
         ) {
-            val radius = 54.dp.toPx()
-            val stroke = 22.dp.toPx()
+            val radius = 68.dp.toPx()
+            val stroke = 28.dp.toPx()
             val center = Offset(size.width / 2f, size.height / 2f)
             val topLeft = Offset(center.x - radius, center.y - radius)
             val arcSize = Size(radius * 2f, radius * 2f)
@@ -424,7 +427,7 @@ private fun Donut(
 @Composable
 private fun CategoryLegend(categories: List<ReportCategory>) {
     val jc = LocalJibetColors.current
-    Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
+    Column(Modifier.fillMaxWidth().padding(top = 20.dp)) {
         Box(
             Modifier
                 .fillMaxWidth()

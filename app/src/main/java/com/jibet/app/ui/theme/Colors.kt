@@ -27,7 +27,7 @@ val GlassBottomL = Color(0x9EFFFFFF)   // white 62%
 val GlassBorderL = Color(0xE6FFFFFF)   // white 90%
 val SkeletonL = Color(0xFFE4E8F4)
 val IconMutedL = Color(0xFFA7AEC0)
-val ScrimL = Color(0x730F1420)         // تیره ۴۵٪
+val ScrimL = Color(0xB30F1420)         // تیره ۷۰٪ — شیت باید صفحه‌ی زیر را کامل محو کند
 val TrackL = Color(0x1A8A92A6)
 
 // ---------- تیره (هم‌خانواده با .dark وب) ----------
@@ -47,12 +47,12 @@ val InputBgD = Color(0xFF1C2436)
 val IconBubbleBgD = Color(0xFF222B40)
 val DividerD = Color(0xFF263046)
 val BorderD = Color(0xFF263046)
-val GlassTopD = Color(0x14FFFFFF)      // سفید ۸٪
-val GlassBottomD = Color(0x05FFFFFF)   // سفید ۲٪
-val GlassBorderD = Color(0x14FFFFFF)
+val GlassTopD = Color(0x1AFFFFFF)      // سفید ۱۰٪ — قرص/کارت شیشه‌ای در تیره باید از پس‌زمینه جداشود
+val GlassBottomD = Color(0x0BFFFFFF)   // سفید ~۴٪
+val GlassBorderD = Color(0x24FFFFFF)   // سفید ۱۴٪
 val SkeletonD = Color(0xFF222B40)
 val IconMutedD = Color(0xFF7C86A0)
-val ScrimD = Color(0x99000000)         // مشکی ۶۰٪
+val ScrimD = Color(0xCC000000)         // مشکی ۸۰٪ — شیت باید صفحه‌ی زیر را کامل محو کند
 val TrackD = Color(0x1A9AA3B8)
 
 data class Accent(val key: String, val a: Color, val b: Color)

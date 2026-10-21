@@ -74,10 +74,11 @@ fun JibetBottomNav(
         contentAlignment = Alignment.BottomCenter,
     ) {
         val jc = LocalJibetColors.current
+        // عرض قرص = عرض محتوای صفحه (gutter 16dp) تا لبه‌ها دقیقاً با کارت‌های بالای صفحه تراز شوند
         Row(
             Modifier
-                .fillMaxWidth(0.94f)
-                .widthIn(max = 420.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
                 .jibetGlass(shape = RoundedCornerShape(26.dp))
                 .shadow(
                     20.dp,
@@ -92,7 +93,7 @@ fun JibetBottomNav(
             verticalAlignment = Alignment.Bottom,
         ) {
             TABS.slice(0..1).forEach { tab ->
-                NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) })
+                NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) }, modifier = Modifier.weight(1f))
             }
 
             // دکمه‌ی + — نیمه‌شناور روی لبه‌ی بالایی نویگیشن
@@ -107,7 +108,7 @@ fun JibetBottomNav(
                 Box(
                     Modifier
                         .align(Alignment.TopCenter)
-                        .offset(y = (-26).dp)
+                        .offset(y = (-28).dp) // نصف قطر ۵۶dp — مثل -translate-y-1/2 وب
                         .scale(scale)
                         .shadow(
                             16.dp,
@@ -131,19 +132,20 @@ fun JibetBottomNav(
             }
 
             TABS.slice(2..3).forEach { tab ->
-                NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) })
+                NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) }, modifier = Modifier.weight(1f))
             }
         }
     }
 }
 
 @Composable
-private fun NavTabButton(tab: NavTab, active: Boolean, onClick: () -> Unit) {
+private fun NavTabButton(tab: NavTab, active: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val jc = LocalJibetColors.current
     val color = if (active) jc.accentA else jc.iconMuted
     Column(
-        Modifier
-            .width(68.dp)
+        modifier
+            // مثل w-[68px] وب؛ ولی وزن‌دار تا در صفحه‌های باریک‌تر (۳۶۰dp) سرریز نشود
+            .widthIn(min = 60.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick, role = Role.Tab)
             .padding(top = 6.dp, bottom = 2.dp),

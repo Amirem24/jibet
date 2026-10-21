@@ -54,10 +54,11 @@ fun JibetSheet(
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
+        // سطح opaque — محتوای صفحه‌ی زیرین نباید از داخل شیت دیده شود
         Column(
             Modifier
                 .fillMaxWidth()
-                .jibetGlass(shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .jibetSheetSurface(shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .imePadding()
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp)

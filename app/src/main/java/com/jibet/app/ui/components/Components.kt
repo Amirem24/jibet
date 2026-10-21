@@ -238,6 +238,37 @@ fun Modifier.jibetGlass(shape: Shape = RoundedCornerShape(24.dp)): Modifier {
         )
 }
 
+/** سطح مودال/شیت — کاملاً پوشاننده‌ی پس‌زمینه: پایه‌ی توپرِ کارت + همان هایلایت شیشه‌ای روی آن.
+ *  شیشه‌ی خالی در حالت تیره (سفید ۸٪→۲٪) محتوای صفحه‌ی زیرین را نشون می‌داد؛ این سطح پایه‌ی opaque دارد. */
+@Composable
+fun Modifier.jibetSheetSurface(shape: Shape = RoundedCornerShape(24.dp)): Modifier {
+    val jc = LocalJibetColors.current
+    return this
+        .shadow(
+            elevation = 24.dp,
+            shape = shape,
+            spotColor = if (jc.isDark) Color(0x8C000000) else Color(0x47232B3B),
+            ambientColor = Color.Transparent,
+        )
+        .clip(shape)
+        .background(jc.card)
+        .drawBehind {
+            drawRect(
+                Brush.linearGradient(
+                    listOf(jc.glassTop, jc.glassBottom),
+                    start = Offset(0f, 0f),
+                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+                )
+            )
+        }
+        // حاشیه‌ی گرادیانی = هایلایت inset «0 1px 0 rgba(255,255,255,.7)» وب
+        .border(
+            1.dp,
+            Brush.verticalGradient(listOf(jc.glassBorder, jc.glassBorder.copy(alpha = jc.glassBorder.alpha * 0.2f))),
+            shape,
+        )
+}
+
 /** افکت فشردن نرم — مثل .jb-pressable وب (scale .97 + آلفا .۹ حین فشردن) */
 @Composable
 fun Modifier.pressableScale(
