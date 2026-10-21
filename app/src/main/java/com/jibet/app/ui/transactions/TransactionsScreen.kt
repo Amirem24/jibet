@@ -159,10 +159,11 @@ class TransactionsViewModel(application: Application) : AndroidViewModel(applica
                     loading.value = true
                 }
         }
-        // انباشت آیتم‌ها — offset=0 جایگزین لیست، offset>0 افزودن بدون تکرار
+        // انباشت آیتم‌ها — offset داخل خود نتیجه حمل می‌شود (نه خواندن لحظه‌ای از state)
+        // تا با تغییر هم‌زمان فیلتر، صفحه‌ی کهنه اشتباهی به‌جای صفحه‌ی اول نمایش داده نشود
         viewModelScope.launch {
             page.collect { p ->
-                if (offset.value == 0) {
+                if (p.offset == 0) {
                     _loaded.value = p.items
                 } else {
                     val seen = _loaded.value.mapTo(HashSet()) { it.id }

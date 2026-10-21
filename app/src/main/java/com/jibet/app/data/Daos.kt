@@ -53,6 +53,7 @@ data class RecurringRow(
     val frequency: Frequency,
     val nextDate: Long,
     val isActive: Boolean,
+    val anchorDay: Int = 0,
     val catName: String?,
     val catColor: String?,
     val catIcon: String?,
@@ -288,7 +289,7 @@ interface JibetDao {
 
     @Query(
         """
-        SELECT r.id, r.title, r.amount, r.kind, r.accountId, r.categoryId, r.frequency, r.nextDate, r.isActive,
+        SELECT r.id, r.title, r.amount, r.kind, r.accountId, r.categoryId, r.frequency, r.nextDate, r.isActive, r.anchorDay,
             c.name AS catName, c.colorHex AS catColor, c.icon AS catIcon,
             a.name AS accName, a.colorHex AS accColor, a.icon AS accIcon
         FROM recurring r

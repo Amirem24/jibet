@@ -1,5 +1,6 @@
 package com.jibet.app.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -77,4 +78,6 @@ data class RecurringEntity(
     /** epoch millis سررسید بعدی */
     val nextDate: Long,
     val isActive: Boolean = true,
+    /** لنگر روز ماه (۱..۳۱ میلادی) برای جلوگیری از دریفت ماهانه/سالانه؛ ۰ = ردیف قدیمی */
+    @ColumnInfo(defaultValue = "0") val anchorDay: Int = 0,
 )

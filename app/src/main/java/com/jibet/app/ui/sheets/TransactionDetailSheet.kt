@@ -66,6 +66,7 @@ import com.jibet.app.data.CategoryEntity
 import com.jibet.app.data.Kind
 import com.jibet.app.data.TxRow
 import com.jibet.app.ui.components.AccentButton
+import com.jibet.app.ui.components.AmountInput
 import com.jibet.app.ui.components.AmountText
 import com.jibet.app.ui.components.IconBubble
 import com.jibet.app.ui.components.JibetField
@@ -569,15 +570,12 @@ private fun DetailEdit(
         }
 
         JibetField(label = "مبلغ (تومان)") {
-            // ورودی مبلغ LTR مثل وب
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                SheetTextInput(
-                    value = if (amountStr.isEmpty()) "" else Fmt.money(Fmt.parseNumber(amountStr)),
-                    onValueChange = onAmountChange,
-                    placeholder = "۰",
-                    keyboardType = KeyboardType.Number,
-                )
-            }
+            // فرمت‌شده + مکان‌نمای پایدار (الگوی BalanceField آنبوردینگ — LTR مثل وب داخل AmountInput است)
+            AmountInput(
+                value = amountStr,
+                onValueChange = onAmountChange,
+                placeholder = "۰",
+            )
         }
 
         // دسته — فقط هم‌نوع

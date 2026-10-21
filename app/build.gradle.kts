@@ -14,8 +14,8 @@ android {
         applicationId = "com.jibet.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "2.1.1"
+        versionCode = 6
+        versionName = "2.1.2"
     }
 
     buildTypes {
@@ -64,4 +64,6 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    testImplementation("junit:junit:4.13.2")
 }

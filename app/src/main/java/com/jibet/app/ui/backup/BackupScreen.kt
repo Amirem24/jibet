@@ -80,6 +80,7 @@ import kotlinx.coroutines.withContext
 
 class BackupViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as JibetApp).repository
+    private val settings = (app as JibetApp).settings
 
     private var restoring by mutableStateOf(false)
 
@@ -88,7 +89,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    val json = repo.exportBackupJson()
+                    val json = repo.exportBackupJson(settings)
                     context.contentResolver.openOutputStream(uri)?.use { out ->
                         out.write(json.toByteArray(Charsets.UTF_8))
                         out.flush()
@@ -130,7 +131,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                         input.readBytes().toString(Charsets.UTF_8)
                     } ?: ""
                 }
-                repo.restoreBackup(text)
+                repo.restoreBackup(text, settings)
                 Toast.makeText(context, "بازیابی شد ✅", Toast.LENGTH_SHORT).show()
             } catch (e: IllegalArgumentException) {
                 // «فایل پشتیبان معتبر نیست» — از restoreBackup

@@ -156,6 +156,7 @@ class RecurringViewModel(app: Application) : AndroidViewModel(app) {
         frequency = frequency,
         nextDate = nextDate,
         isActive = isActive,
+        anchorDay = anchorDay,
     )
 
     suspend fun toggle(r: RecurringRow) {
@@ -184,6 +185,9 @@ class RecurringViewModel(app: Application) : AndroidViewModel(app) {
                     categoryId = categoryId,
                     frequency = frequency,
                     nextDate = nextDate,
+                    // با تغییر سررسید، لنگر روز ماه هم باید به‌روز شود
+                    anchorDay = java.time.Instant.ofEpochMilli(nextDate)
+                        .atZone(java.time.ZoneId.systemDefault()).dayOfMonth,
                 )
             )
             toast("ویرایش شد", "${Fmt.money(amount)} تومان · $freqLabel")

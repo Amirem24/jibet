@@ -7,7 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -87,8 +90,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -100,12 +107,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jibet.app.data.Kind
@@ -670,12 +683,78 @@ fun JibetKeypad(
                             )
                         } else {
                             Text(
-                                Fmt.money(k.toLong()),
+                                // «۰۰۰» باید سه صفر دیده شود، نه مثل «۰» فشرده شود
+                                if (k == "000") Fmt.faDigits("000") else Fmt.money(k.toLong()),
                                 style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 21.sp, color = Ink),
                             )
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** ورودی مبلغ — نمایش فرمت‌شده با جداکننده + مکان‌نمای پایدار
+ *  (پورت الگوی BalanceField آنبوردینگ: متن خام بالادست نگه داشته می‌شود و
+ *  تعداد رقم‌های پیش از مکان‌نما حفظ می‌شود تا کرسر با هر فرمت‌سازی نپرد) */
+@Composable
+fun AmountInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = "۰",
+) {
+    val jc = LocalJibetColors.current
+    var fieldValue by remember { mutableStateOf(TextFieldValue("")) }
+
+    // سینک با مقدار بیرونی — فقط وقتی واقعاً بیرون عوض شده (نه بعد از هر تایپ)
+    LaunchedEffect(value) {
+        val needsSync =
+            Fmt.parseNumber(fieldValue.text) != Fmt.parseNumber(value) ||
+            fieldValue.text.isEmpty() != value.isEmpty()
+        if (needsSync) {
+            val formatted = if (value.isEmpty()) "" else Fmt.money(Fmt.parseNumber(value))
+            fieldValue = TextFieldValue(formatted, TextRange(formatted.length))
+        }
+    }
+
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Box(
+            modifier
+                .height(48.dp)
+                .jibetInputShape(),
+        ) {
+            BasicTextField(
+                value = fieldValue,
+                onValueChange = { input ->
+                    // تعداد رقم‌های پیش از مکان‌نمای کاربر حفظ می‌شود تا پرش نکند
+                    val digitsBefore = input.text.take(input.selection.start).count { it.isDigit() }
+                    val formatted = if (input.text.isEmpty()) "" else Fmt.money(Fmt.parseNumber(input.text))
+                    var idx = 0
+                    var count = 0
+                    for ((i, c) in formatted.withIndex()) {
+                        if (count >= digitsBefore) break
+                        if (c.isDigit()) count++
+                        idx = i + 1
+                    }
+                    fieldValue = TextFieldValue(formatted, TextRange(idx))
+                    onValueChange(input.text)
+                },
+                singleLine = true,
+                textStyle = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
+                cursorBrush = SolidColor(jc.accentA),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            )
+            if (fieldValue.text.isEmpty() && placeholder.isNotEmpty()) {
+                Text(
+                    placeholder,
+                    style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
+                    modifier = Modifier.align(Alignment.CenterStart),
+                )
             }
         }
     }

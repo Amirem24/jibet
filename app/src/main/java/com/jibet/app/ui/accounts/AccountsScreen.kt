@@ -69,6 +69,7 @@ import com.jibet.app.data.AccountEntity
 import com.jibet.app.data.AccountKind
 import com.jibet.app.data.AccountRow
 import com.jibet.app.ui.components.AccentButton
+import com.jibet.app.ui.components.AmountInput
 import com.jibet.app.ui.components.EmptyState
 import com.jibet.app.ui.components.GlassIconButton
 import com.jibet.app.ui.components.IconBubble
@@ -479,35 +480,11 @@ private fun NameInput(value: String, onChange: (String) -> Unit, placeholder: St
     }
 }
 
-/** ورودی موجودی — کیبورد عددی، نمایش فرمت‌شده، جهت چپ‌به‌راست مثل dir="ltr" وب */
+/** ورودی موجودی — فرمت‌شده با جداکننده، مکان‌نمای پایدار، جهت چپ‌به‌راست مثل dir="ltr" وب
+ *  (الگوی BalanceField آنبوردینگ — کامپوننت مشترک AmountInput) */
 @Composable
 private fun BalanceInput(value: String, onChange: (String) -> Unit, accent: Color) {
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .jibetInputShape()
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            if (value.isEmpty()) {
-                Text(
-                    "۰",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Faint),
-                )
-            }
-            BasicTextField(
-                value = TextFieldValue(value, TextRange(value.length)),
-                onValueChange = { onChange(it.text) },
-                singleLine = true,
-                textStyle = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ink),
-                cursorBrush = SolidColor(accent),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
+    AmountInput(value = value, onValueChange = onChange, placeholder = "۰")
 }
 
 /** چیپ‌های نوع حساب — ۵ گزینه با پر کردن سطر */

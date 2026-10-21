@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -20,7 +21,8 @@ object UiBus {
     val detailTxId = MutableStateFlow<Long?>(null)
 
     fun openAdd(kind: Kind? = null) {
-        if (kind != null) addKind.value = kind
+        // دکمه‌ی مرکزی «+» همیشه «هزینه» را باز می‌کند؛ فراخوانی‌های صریح (اکشن درآمد) نوع خودشان را می‌دهند
+        addKind.value = kind ?: Kind.EXPENSE
         addOpen.value = true
     }
 
@@ -49,9 +51,20 @@ class JibetApp : Application() {
     val database: JibetDatabase by lazy { JibetDatabase.create(this) }
     val repository: JibetRepository by lazy {
         JibetRepository(database, appScope).also { repo ->
-            // پردازش سررسیدهای تکراری در شروع برنامه
-            appScope.launch { repo.processDueRecurring() }
+            // پردازش سررسیدهای تکراری: در شروع + هر ۱۵ دقیقه تا وقتی اپ باز است
+            // (قبلاً فقط یک‌بار در شروع اجرا می‌شد و سررسید وسط روز ثبت نمی‌شد)
+            appScope.launch {
+                while (true) {
+                    runCatching { repo.processDueRecurring() }
+                        .onFailure { Log.e("Jibet", "خطای پردازش تکراری‌ها", it) }
+                    delay(RECURRING_CHECK_INTERVAL_MS)
+                }
+            }
         }
     }
     val settings: SettingsRepository by lazy { SettingsRepository(this) }
+
+    private companion object {
+        const val RECURRING_CHECK_INTERVAL_MS = 15L * 60 * 1000
+    }
 }

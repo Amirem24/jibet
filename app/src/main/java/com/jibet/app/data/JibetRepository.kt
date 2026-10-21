@@ -5,12 +5,20 @@ import com.jibet.app.util.PRESET_ACCOUNTS
 import com.jibet.app.util.PRESET_CATEGORIES
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.ZoneId
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /** خلاصه‌ی خانه */
@@ -43,8 +51,9 @@ data class ReportData(
     val trend: List<ReportBucket>,
 )
 
-/** نتیجه‌ی صفحه‌بندی تراکنش‌ها */
-data class TxPage(val items: List<TxRow>, val total: Int, val income: Double, val expense: Double)
+/** نتیجه‌ی صفحه‌بندی تراکنش‌ها — offset همراه نتیجه حمل می‌شود تا رخدادهای کهنه
+ *  (مثلاً هنگام تغییر هم‌زمان فیلتر) اشتباهی به‌جای صفحه‌ی اول نمایش داده نشوند */
+data class TxPage(val items: List<TxRow>, val total: Int, val income: Double, val expense: Double, val offset: Int = 0)
 
 /** پیش‌نویس حساب برای آنبوردینگ */
 data class AccountDraft(val key: String, val balance: Double)
@@ -63,14 +72,14 @@ class JibetRepository(
     fun watchRecurrings(): Flow<List<RecurringRow>> = dao.watchRecurrings()
     fun watchTotalBalance(): Flow<Double> = dao.watchTotalBalance()
 
-    /** خلاصه‌ی امروز + این ماه شمسی */
-    fun watchSummary(): Flow<Summary> {
+    /** خلاصه‌ی امروز + این ماه شمسی — بازه‌ها هر دقیقه (و بعد از نیمه‌شب) بازمحاسبه می‌شوند
+     *  تا اگر اپ باز بماند و روز/ماه عوض شود، اعداد کهنه نشوند */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun watchSummary(): Flow<Summary> = dayTick().flatMapLatest {
         val today = LocalDate.now()
         val (mStart, mEnd, _) = JDate.jalaliMonthRange(today)
-        val tStart = JDate.startOfDay(today)
-        val tEnd = JDate.endOfDay(today)
-        return combine(
-            dao.watchMoneyInRange(tStart, tEnd),
+        combine(
+            dao.watchMoneyInRange(JDate.startOfDay(today), JDate.endOfDay(today)),
             dao.watchMoneyInRange(mStart, mEnd),
         ) { t, m -> Summary(t.income, t.expense, m.income, m.expense) }
     }
@@ -112,29 +121,43 @@ class JibetRepository(
                 from = from,
                 to = to,
             ),
-        ) { items, totals -> TxPage(items, totals.total, totals.income, totals.expense) }
+        ) { items, totals -> TxPage(items, totals.total, totals.income, totals.expense, offset) }
 
     /* ================= گزارش ================= */
 
-    /** گزارش دوره‌ای — واکنش‌گرا نسبت به تغییر تراکنش‌ها */
-    fun watchReport(period: String, refMillis: Long, kind: Kind): Flow<ReportData> {
-        val ref = JDate.localDate(refMillis)
-        val (start, end, bucketsSeed) = when (period) {
-            "week" -> {
-                val (s, e) = JDate.persianWeekRange(ref)
-                Triple(s, e, weekBuckets(JDate.localDate(s)))
+    /** گزارش دوره‌ای — واکنش‌گرا نسبت به تغییر تراکنش‌ها؛ بازه‌ها هم مثل خلاصه تازه می‌مانند */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun watchReport(period: String, refMillis: Long, kind: Kind): Flow<ReportData> =
+        dayTick().flatMapLatest {
+            val ref = JDate.localDate(refMillis)
+            val (start, end, bucketsSeed) = when (period) {
+                "week" -> {
+                    val (s, e) = JDate.persianWeekRange(ref)
+                    Triple(s, e, weekBuckets(JDate.localDate(s)))
+                }
+                "year" -> {
+                    val (s, e, j) = JDate.jalaliYearRange(ref)
+                    Triple(s, e, yearBuckets(j.jy))
+                }
+                else -> {
+                    val (s, e, j) = JDate.jalaliMonthRange(ref)
+                    Triple(s, e, monthBuckets(j.jy, j.jm))
+                }
             }
-            "year" -> {
-                val (s, e, j) = JDate.jalaliYearRange(ref)
-                Triple(s, e, yearBuckets(j.jy))
-            }
-            else -> {
-                val (s, e, j) = JDate.jalaliMonthRange(ref)
-                Triple(s, e, monthBuckets(j.jy, j.jm))
+            dao.watchTxInRange(start, end).map { txs ->
+                buildReport(period, start, end, kind, bucketsSeed, txs)
             }
         }
-        return dao.watchTxInRange(start, end).map { txs ->
-            buildReport(period, start, end, kind, bucketsSeed, txs)
+
+    /** تیک بازمحاسبه‌ی بازه‌های زمانی: هر دقیقه، و ۱ ثانیه بعد از نیمه‌شب
+     *  (برای پاس‌دادن روز/ماه بدون اینکه اپ باید دوباره باز شود) */
+    private fun dayTick(): Flow<Unit> = flow {
+        while (true) {
+            emit(Unit)
+            val nowZ = LocalDateTime.now()
+            val untilMidnight =
+                Duration.between(nowZ, nowZ.toLocalDate().plusDays(1).atStartOfDay()).toMillis() + 1_000
+            delay(untilMidnight.coerceIn(1_000L, 60_000L))
         }
     }
 
@@ -338,6 +361,8 @@ class JibetRepository(
             categoryId = categoryId,
             frequency = frequency,
             nextDate = nextDate,
+            // لنگر روز ماه از همان اول ذخیره می‌شود تا پیشروی ماهانه دریفت نکند
+            anchorDay = java.time.Instant.ofEpochMilli(nextDate).atZone(ZoneId.systemDefault()).dayOfMonth,
         )
     )
 
@@ -505,11 +530,14 @@ class JibetRepository(
             val internet = expCat("قبض")
             val salary = incCat("حقوق")
             val nextMonth = System.currentTimeMillis() + 30L * 24 * 3600 * 1000
+            val nextMonthAnchor = java.time.Instant.ofEpochMilli(nextMonth)
+                .atZone(ZoneId.systemDefault()).dayOfMonth
             rent?.let {
                 dao.insertRecurring(
                     RecurringEntity(
                         title = "اجاره خانه", amount = 9_000_000.0, kind = Kind.EXPENSE,
                         accountId = card.id, categoryId = it.id, frequency = Frequency.MONTHLY, nextDate = nextMonth,
+                        anchorDay = nextMonthAnchor,
                     )
                 )
             }
@@ -518,6 +546,7 @@ class JibetRepository(
                     RecurringEntity(
                         title = "اشتراک اینترنت", amount = 380_000.0, kind = Kind.EXPENSE,
                         accountId = card.id, categoryId = it.id, frequency = Frequency.MONTHLY, nextDate = nextMonth,
+                        anchorDay = nextMonthAnchor,
                     )
                 )
             }
@@ -526,6 +555,7 @@ class JibetRepository(
                     RecurringEntity(
                         title = "حقوق ماهانه", amount = 28_500_000.0, kind = Kind.INCOME,
                         accountId = card.id, categoryId = it.id, frequency = Frequency.MONTHLY, nextDate = nextMonth,
+                        anchorDay = nextMonthAnchor,
                     )
                 )
             }
@@ -543,11 +573,13 @@ class JibetRepository(
 
     /* ================= پردازش تراکنش‌های تکراری ================= */
 
-    /** در شروع برنامه: ثبت تراکنش‌های سررسیدشده و پیش‌بردن سررسید بعدی */
+    /** ثبت تراکنش‌های سررسیدشده و پیش‌بردن سررسید بعدی
+     *  در شروع برنامه + هر ۱۵ دقیقه (نگاه JibetApp) اجرا می‌شود */
     suspend fun processDueRecurring() {
         val now = System.currentTimeMillis()
         for (r in dao.activeRecurrings()) {
             var next = r.nextDate
+            var anchor = r.anchorDay
             var guard = 0
             while (next <= now && guard < 200) {
                 dao.insertTx(
@@ -561,24 +593,40 @@ class JibetRepository(
                         recurringId = r.id,
                     )
                 )
-                next = advance(next, r.frequency)
+                next = advance(next, r.frequency, anchor)
                 guard++
             }
-            if (guard > 0) {
-                dao.updateRecurring(r.copy(nextDate = next))
+            // برای ردیف‌های قدیمی (anchorDay=0) لنگر از سررسید فعلی استخراج و ذخیره
+            // می‌شود تا دریفت انباشته از این به بعد متوقف شود
+            if (guard > 0 || anchor !in 1..31) {
+                if (anchor !in 1..31) {
+                    anchor = java.time.Instant.ofEpochMilli(r.nextDate)
+                        .atZone(ZoneId.systemDefault()).dayOfMonth
+                }
+                dao.updateRecurring(r.copy(nextDate = next, anchorDay = anchor))
             }
         }
     }
 
-    private fun advance(millis: Long, f: Frequency): Long {
+    /** پیش‌بردن سررسید — برای ماهانه/سالانه از «لنگر روز ماه» استفاده می‌شود تا
+     *  زنجیره‌ی ۳۱ ژانویه ← ۲۸ فوریه ← ۲۸ مارس (دریفت) رخ ندهد */
+    private fun advance(millis: Long, f: Frequency, anchorDay: Int): Long {
         val z = ZoneId.systemDefault()
         val ldt = java.time.Instant.ofEpochMilli(millis).atZone(z)
-        val advanced = when (f) {
-            Frequency.DAILY -> ldt.plusDays(1)
-            Frequency.WEEKLY -> ldt.plusDays(7)
-            Frequency.MONTHLY -> ldt.plusMonths(1)
-            Frequency.YEARLY -> ldt.plusYears(1)
+        val anchor = if (anchorDay in 1..31) anchorDay else ldt.dayOfMonth
+        val time = ldt.toLocalTime()
+        val nextDate = when (f) {
+            Frequency.DAILY -> ldt.toLocalDate().plusDays(1)
+            Frequency.WEEKLY -> ldt.toLocalDate().plusDays(7)
+            Frequency.MONTHLY -> {
+                val ym = YearMonth.from(ldt).plusMonths(1)
+                ym.atDay(min(anchor, ym.lengthOfMonth()))
+            }
+            Frequency.YEARLY -> {
+                val ym = YearMonth.from(ldt).plusYears(1)
+                ym.atDay(min(anchor, ym.lengthOfMonth()))
+            }
         }
-        return advanced.toInstant().toEpochMilli()
+        return nextDate.atTime(time).atZone(z).toInstant().toEpochMilli()
     }
 }

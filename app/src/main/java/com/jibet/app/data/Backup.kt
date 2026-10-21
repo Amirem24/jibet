@@ -1,11 +1,14 @@
 package com.jibet.app.data
 
 import androidx.room.withTransaction
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import java.time.Instant
+import java.time.ZoneId
 
 /* فرمت فایل پشتیبان — دقیقاً مطابق /api/backup نسخه وب (سازگار دوسویه) */
 
@@ -94,19 +97,25 @@ private val backupJson = Json {
     encodeDefaults = true
 }
 
-/** ساخت فایل پشتیبان JSON — سازگار با نسخه وب */
-suspend fun JibetRepository.exportBackupJson(): String {
+/** کلیدهای مجاز تنظیمات قابل انتقال در پشتیبان */
+private val BACKUP_ACCENT_KEYS = setOf("blue", "green", "purple", "orange")
+
+/** ساخت فایل پشتیبان JSON — سازگار با نسخه وب
+ *  تنظیمات اپ (رنگ اپ) هم داخل فایل می‌رود تا با پشتیبان جابه‌جا شود */
+suspend fun JibetRepository.exportBackupJson(settings: SettingsRepository? = null): String {
     val accounts = dao.allAccounts()
     val categories = dao.allCategories()
     val txs = dao.allTransactions()
     val budgets = dao.allBudgets()
     val goals = dao.allGoals()
     val recurrings = dao.allRecurrings()
+    val accent = settings?.let { s -> s.accent.first() }
 
     val payload = BackupPayload(
         app = "jibet",
         version = 1,
         exportedAt = Instant.now().toString(),
+        settings = accent?.let { mapOf("accent" to JsonPrimitive(it)) },
         accounts = accounts.map {
             BackupAccount(
                 name = it.name, kind = it.kind.name.lowercase(), initialBalance = it.initialBalance,
@@ -151,8 +160,10 @@ suspend fun JibetRepository.exportBackupJson(): String {
     return backupJson.encodeToString(payload)
 }
 
-/** بازیابی کامل از فایل پشتیبان — جایگزینی همه‌ی داده‌ها */
-suspend fun JibetRepository.restoreBackup(json: String) {
+/** بازیابی کامل از فایل پشتیبان — جایگزینی همه‌ی داده‌ها
+ *  قبل از هر پاک‌سازی اعتبارسنجی می‌شود تا کاربر با صفر حساب/دسته رها نشود؛
+ *  تنظیمات اپ (رنگ) هم بعد از بازیابی موفق اعمال می‌شود */
+suspend fun JibetRepository.restoreBackup(json: String, settings: SettingsRepository? = null) {
     val payload = try {
         backupJson.decodeFromString<BackupPayload>(json)
     } catch (_: SerializationException) {
@@ -161,6 +172,14 @@ suspend fun JibetRepository.restoreBackup(json: String) {
         throw IllegalArgumentException("فایل پشتیبان معتبر نیست")
     }
     if (payload.app != "jibet") throw IllegalArgumentException("فایل پشتیبان معتبر نیست")
+
+    // اعتبارسنجی پیش از پاک‌سازی — پشتیبان بدون حساب یا دسته، اپ را بی‌استفاده می‌کند
+    if (payload.accounts.isEmpty()) {
+        throw IllegalArgumentException("فایل پشتیبان هیچ حسابی ندارد")
+    }
+    if (payload.categories.isEmpty()) {
+        throw IllegalArgumentException("فایل پشتیبان هیچ دسته‌بندی‌ای ندارد")
+    }
 
     db.withTransactionCompat {
         dao.deleteAllTx()
@@ -235,9 +254,15 @@ suspend fun JibetRepository.restoreBackup(json: String) {
                     accountId = accountId, categoryId = categoryId,
                     frequency = Frequency.from(r.frequency.uppercase()),
                     nextDate = next, isActive = r.isActive,
+                    anchorDay = Instant.ofEpochMilli(next).atZone(ZoneId.systemDefault()).dayOfMonth,
                 )
             )
         }
+    }
+
+    // اعمال تنظیمات فقط بعد از موفقیت کامل بازیابی
+    (payload.settings?.get("accent") as? JsonPrimitive)?.content?.let { key ->
+        if (key in BACKUP_ACCENT_KEYS) settings?.setAccent(key)
     }
 }
 

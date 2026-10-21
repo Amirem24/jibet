@@ -31,18 +31,17 @@ object Fmt {
     /** 64.2 → «۶۴٪» */
     fun percent(p: Double): String = "${faDigits(Math.round(p).toInt())}٪"
 
-    /** تبدیل رشته‌ی فارسی/لاتین عدد به Double — همه‌ی جداکننده‌ها حذف می‌شوند */
+    /** تبدیل رشته‌ی فارسی/لاتین عدد به Double — همه‌ی جداکننده‌ها حذف می‌شوند.
+     *  فقط ارقام پذیرفته‌شده (لاتین/فارسی/عربی) نگه داشته می‌شوند؛ هر رقم یونیکد دیگر
+     *  (مثلاً دِواَناغاری) نادیده گرفته می‌شود — هیچ‌وقت NumberFormatException نمی‌دهد. */
     fun parseNumber(input: String): Double {
-        val cleaned = input
-            .map { c ->
-                when {
-                    c in '۰'..'۹' -> ('0' + (c - '۰'))
-                    c in '٠'..'٩' -> ('0' + (c - '٠'))
-                    else -> c
-                }
+        val cleaned = buildString {
+            for (c in input) when {
+                c in '۰'..'۹' -> append('0' + (c - '۰'))
+                c in '٠'..'٩' -> append('0' + (c - '٠'))
+                c in '0'..'9' -> append(c)
             }
-            .filter { it.isDigit() }
-            .joinToString("")
-        return if (cleaned.isEmpty()) 0.0 else cleaned.toDouble()
+        }
+        return cleaned.toDoubleOrNull() ?: 0.0
     }
 }
