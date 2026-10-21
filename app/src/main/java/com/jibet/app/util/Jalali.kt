@@ -7,7 +7,15 @@ import java.time.ZoneId
 
 /**
  * تبدیل تاریخ میلادی ↔ شمسی — پورت دقیق الگوریتم jalaali-js (همان الگوریتم نسخه وب).
- * تمام مقادیر بر اساس تاریخ محلی دستگاه.
+ *
+ * ⚠️ نکات حیاتی این پیاده‌سازی (رفع کرش ArrayIndexOutOfBoundsException):
+ *  ۱. div باید «تقسیم تراک‌نینگ» (مثل ~~ در جاوااسکریپت) باشد نه floor —
+ *     div(gm-8,6) برای ژانویه تا ژوئیه و div(8-gm,6) برای سپتامبر تا دسامبر منفی است
+ *     و تفاوت floor/trunc نتیجه را کاملاً به‌هم می‌ریزد.
+ *  ۲. در g2d باید «+752» شود (اصلاح کبیسه گرگوری)، نه «−752» —
+ *     علامت اشتباه، JDN را ۱۵۰۴ روز جابه‌جا می‌کرد و ماه شمسی را به عددی
+ *     بزرگ‌تر از ۱۲ (مثلاً ۸۰) تبدیل می‌کرد.
+ *  ۳. persianWeekday: شنبه = ۰ … جمعه = ۶ (قبلاً یک روز خطا داشت).
  */
 object JDate {
 
@@ -18,13 +26,13 @@ object JDate {
         2192, 2262, 2324, 2394, 2456, 3178,
     )
 
-    private fun div(a: Int, b: Int): Int {
-        var q = a / b
-        if ((a % b != 0) && ((a < 0) != (b < 0))) q--
-        return q
-    }
+    /** تقسیم تراک‌نینگ — معادل ~~(a/b) در جاوااسکریپت (مرجع: jalaali-js) */
+    private fun div(a: Int, b: Int): Int = a / b
+    private fun divL(a: Long, b: Long): Long = a / b
 
-    private fun mod(a: Int, b: Int): Int = a - div(a, b) * b
+    /** باقیمانده با تقسیم تراک‌نینگ — معادل a - ~~(a/b)*b */
+    private fun mod(a: Int, b: Int): Int = a - a / b * b
+    private fun modL(a: Long, b: Long): Long = a - a / b * b
 
     private class JalCalResult(val leap: Int, val gy: Int, val march: Int)
 
@@ -53,20 +61,24 @@ object JDate {
         return JalCalResult(leap, gy, march)
     }
 
+    /** میلادی → شماره‌ی روز ژولینی (JDN) — دقیقاً مطابق jalaali-js */
     private fun g2d(gy: Int, gm: Int, gd: Int): Long {
-        var d = div((gy + div(gm - 8, 6) + 100100) * 1461, 4).toLong() +
-            div(153 * mod(gm + 9, 12) + 2, 5).toLong() + gd - 34840408L
-        d -= div(div(gy + 100100 + div(gm - 8, 6), 100) * 3, 4).toLong() + 752L
+        var d = div((gy + div(gm - 8, 6) + 100100) * 1461, 4).toLong()
+        d += div(153 * mod(gm + 9, 12) + 2, 5).toLong()
+        d += gd - 34840408L
+        d -= div(div(gy + 100100 + div(gm - 8, 6), 100) * 3, 4).toLong()
+        d += 752L
         return d
     }
 
+    /** شماره‌ی روز ژولینی → میلادی — با حساب ۶۴بیتی تا سرریز نشود */
     private fun d2g(jdn: Long): IntArray {
         var j = 4 * jdn + 139361631L
-        j += div(div((4 * jdn + 183187720).toInt(), 146097) * 3, 4).toLong() * 4 - 3908L
-        val i = div(mod(j.toInt(), 1461), 4) * 5 + 308
-        val gd = div(mod(i, 153), 5) + 1
-        val gm = mod(div(i, 153), 12) + 1
-        val gy = div(j.toInt(), 1461) - 100100 + div(8 - gm, 6)
+        j += divL(divL(4 * jdn + 183187720L, 146097L) * 3L, 4L) * 4L - 3908L
+        val i = divL(modL(j, 1461L), 4L) * 5L + 308L
+        val gd = (divL(modL(i, 153L), 5L) + 1L).toInt()
+        val gm = (modL(divL(i, 153L), 12L) + 1L).toInt()
+        val gy = (divL(j, 1461L) - 100100L + divL(8L - gm, 6L)).toInt()
         return intArrayOf(gy, gm, gd)
     }
 
@@ -123,8 +135,12 @@ object JDate {
     /** شنبه تا جمعه */
     val J_WEEKDAYS = listOf("شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه")
 
-    /** ایندکس روز هفته با شنبه = ۰ */
-    fun persianWeekday(date: LocalDate): Int = (date.dayOfWeek.value % 7)
+    /** نام ماه با محافظت از ایندکس — هرگز crash نمی‌کند */
+    fun monthName(jm: Int): String = J_MONTHS[(jm - 1).coerceIn(0, 11)]
+
+    /** ایندکس روز هفته با شنبه = ۰ و جمعه = ۶
+     *  DayOfWeek: دوشنبه=۱ … یکشنبه=۷ → (value+1)%7 */
+    fun persianWeekday(date: LocalDate): Int = (date.dayOfWeek.value + 1) % 7
 
     fun startOfDay(date: LocalDate): Long =
         date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -178,11 +194,16 @@ object JDate {
             style,
         )
 
-    private fun formatParts(j: JDateParts, style: Style): String = when (style) {
-        Style.LONG -> "${j.jd} ${J_MONTHS[j.jm - 1]} ${j.jy}"
-        Style.SHORT -> "${j.jd} ${J_MONTHS[j.jm - 1]}"
-        Style.NUMERIC ->
-            "${j.jy}/${j.jm.toString().padStart(2, '0')}/${j.jd.toString().padStart(2, '0')}"
+    private fun formatParts(j: JDateParts, style: Style): String {
+        // محافظت کامل — حتی با ورودی نادرست هم هیچ‌وقت exception نمی‌دهد
+        val m = j.jm.coerceIn(1, 12)
+        val d = j.jd.coerceIn(1, 31)
+        return when (style) {
+            Style.LONG -> "$d ${monthName(m)} ${j.jy}"
+            Style.SHORT -> "$d ${monthName(m)}"
+            Style.NUMERIC ->
+                "${j.jy}/${m.toString().padStart(2, '0')}/${d.toString().padStart(2, '0')}"
+        }
     }
 
     /** برچسب گروه‌بندی لیست تراکنش‌ها: امروز / دیروز / X مهر */
@@ -193,7 +214,7 @@ object JDate {
         if (diff == 1L) return "دیروز"
         val j = toJalali(date)
         val t = toJalali(today)
-        return if (j.jm == t.jm && j.jy == t.jy) "${j.jd} ${J_MONTHS[j.jm - 1]}"
+        return if (j.jm == t.jm && j.jy == t.jy) "${j.jd} ${monthName(j.jm)}"
         else formatJalaliDate(date, Style.SHORT)
     }
 
