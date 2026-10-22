@@ -164,7 +164,7 @@ fun HomeScreen(onPush: (String) -> Unit, onTab: (String) -> Unit) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Header(onTab = onTab, onPush = onPush)
+        Header(onPush = onPush)
 
         FadeIn(0) { BalanceCard(totalBalance = totalBalance) }
 
@@ -183,7 +183,7 @@ fun HomeScreen(onPush: (String) -> Unit, onTab: (String) -> Unit) {
 /* ================= هدر ================= */
 
 @Composable
-private fun Header(onTab: (String) -> Unit, onPush: (String) -> Unit) {
+private fun Header(onPush: (String) -> Unit) {
     val jc = LocalJibetColors.current
     Row(
         Modifier
@@ -207,7 +207,7 @@ private fun Header(onTab: (String) -> Unit, onPush: (String) -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            GlassIconButton(onClick = { onTab("transactions") }) {
+            GlassIconButton(onClick = { onPush("search") }) {
                 Icon(
                     Icons.Rounded.Search,
                     contentDescription = "جستجو",
@@ -419,7 +419,7 @@ private fun TodayCard(summary: Summary) {
                 .fillMaxWidth()
                 .padding(vertical = 12.dp)
                 .height(1.dp)
-                .background(Color(0xFFEEF1F8)),
+                .background(jc.divider),
         )
         Row(
             Modifier.fillMaxWidth(),

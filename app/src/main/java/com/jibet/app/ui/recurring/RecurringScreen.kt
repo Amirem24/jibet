@@ -380,18 +380,18 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
     val jc = LocalJibetColors.current
     val scope = rememberCoroutineScope()
 
-    // تطبیق سررسید فعلی با یکی از گزینه‌های سریع (در غیر این صورت «امروز»)
-    val initOffset: Int = editing?.nextDate
-        ?.let { nd -> START_OPTIONS.firstOrNull { o -> sameJDay(nd, dateFromOffset(o.offset)) }?.offset }
-        ?: 0
-
+    // سررسید انتخاب‌شده — در ویرایش، تاریخ فعلی حفظ می‌شود مگر کاربر خودش گزینه‌ای بزند.
+    // قبلاً اگر تاریخ با هیچ‌کدام از گزینه‌های سریع جور نمی‌شد، «امروز» انتخاب می‌شد و با
+    // ذخیره، سررسید به امروز پرت می‌شد و تراکنش تکراری فوراً (و ناخواسته) ثبت می‌شد.
+    var nextDate by remember {
+        mutableStateOf(editing?.nextDate ?: JDate.millis(dateFromOffset(0)))
+    }
     var kind by remember { mutableStateOf(editing?.kind ?: Kind.EXPENSE) }
     var title by remember { mutableStateOf(editing?.title ?: "") }
     var amount by remember { mutableStateOf(editing?.amount?.toEditableAmount() ?: "") }
     var categoryId by remember { mutableStateOf(editing?.categoryId) }
     var accountId by remember { mutableStateOf<Long?>(editing?.accountId) }
     var frequency by remember { mutableStateOf(editing?.frequency ?: Frequency.MONTHLY) }
-    var startOffset by remember { mutableStateOf(if (editing != null) initOffset else 0) }
     var saving by remember { mutableStateOf(false) }
     var armed by remember { mutableStateOf(false) }
 
@@ -410,7 +410,7 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
     }
 
     val categories = allCategories.filter { it.kind == kind }
-    val startDate = dateFromOffset(startOffset)
+    val startDate = JDate.localDate(nextDate)
     val amountValue = amount.toDoubleOrNull() ?: 0.0
     val canSave = title.isNotBlank() && amountValue > 0 && categoryId != null && accountId != null && !saving
 
@@ -526,7 +526,7 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     START_OPTIONS.forEach { o ->
-                        val active = startOffset == o.offset
+                        val active = sameJDay(nextDate, dateFromOffset(o.offset))
                         JibetChip(
                             label = if (active) {
                                 "${o.label} · ${JDate.formatJalaliDate(dateFromOffset(o.offset), JDate.Style.SHORT)}"
@@ -534,7 +534,17 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
                                 o.label
                             },
                             active = active,
-                            onClick = { startOffset = o.offset },
+                            onClick = { nextDate = JDate.millis(dateFromOffset(o.offset)) },
+                        )
+                    }
+                    // در ویرایش، اگر سررسید فعلی با هیچ گزینه‌ای جور نیست، یک چیپ برای
+                    // «همان تاریخ قبلی» نشان داده می‌شود تا کاربر ناخواسته آن را عوض نکند
+                    val keepOriginal = editing?.nextDate
+                    if (keepOriginal != null && START_OPTIONS.none { sameJDay(keepOriginal, dateFromOffset(it.offset)) }) {
+                        JibetChip(
+                            label = "همان تاریخ · ${Fmt.faDigits(JDate.formatJalaliDate(keepOriginal, JDate.Style.SHORT))}",
+                            active = nextDate == keepOriginal,
+                            onClick = { nextDate = keepOriginal },
                         )
                     }
                 }
@@ -576,7 +586,7 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
                             accountId = accountId!!,
                             categoryId = categoryId!!,
                             frequency = frequency,
-                            nextDate = JDate.millis(startDate),
+                            nextDate = nextDate,
                         )
                         saving = false
                         onClose()

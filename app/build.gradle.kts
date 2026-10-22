@@ -7,8 +7,8 @@ plugins {
 }
 
 // نسخه از CI قابل پاس‌دادن است: ./gradlew -PjibetVersionCode=12 -PjibetVersionName=2.2.0
-val jibetVersionCode: Int = (project.findProperty("jibetVersionCode") as String?)?.toIntOrNull() ?: 7
-val jibetVersionName: String = (project.findProperty("jibetVersionName") as String?) ?: "2.2.1"
+val jibetVersionCode: Int = (project.findProperty("jibetVersionCode") as String?)?.toIntOrNull() ?: 8
+val jibetVersionName: String = (project.findProperty("jibetVersionName") as String?) ?: "2.3.0"
 
 // امضای ریلیز — از Secrets خوانده می‌شود؛ اگر نبود، ریلیز بدون امضای اختصاصی بیلد می‌شود (فقط محلی)
 val keystoreFile: String? = System.getenv("JB_KEYSTORE_PATH")

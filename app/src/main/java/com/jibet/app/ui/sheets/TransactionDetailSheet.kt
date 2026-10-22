@@ -703,7 +703,7 @@ private fun DetailEdit(
                     } else {
                         Icon(
                             Icons.Rounded.Check,
-                            contentDescription = null,
+                            contentDescription = "ذخیره‌ی تغییرات",
                             tint = Color.White,
                             modifier = Modifier.size(19.dp),
                         )

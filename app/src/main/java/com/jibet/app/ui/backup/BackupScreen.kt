@@ -240,7 +240,7 @@ fun BackupScreen(onBack: () -> Unit) {
                     color = Color(0xFFF5A524),
                     icon = Icons.Rounded.FileUpload,
                     iconSize = 22.dp,
-                    onClick = { jsonOpener.launch(arrayOf("application/json")) },
+                    onClick = { jsonOpener.launch(arrayOf("application/json", "text/plain", "*/*")) },
                 )
             }
 
