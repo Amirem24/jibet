@@ -53,7 +53,7 @@ import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.hazeEffect
 
 data class NavTab(val route: String, val label: String, val icon: ImageVector)
 
@@ -102,10 +102,7 @@ fun JibetBottomNav(
                 // + tint سفید نیمه‌شفاف؛ بدون Haze (API پایین) گرادیان شیشه‌ای جایگزین می‌شود
                 .then(
                     if (hazeState != null) {
-                        Modifier.hazeChild(
-                            state = hazeState,
-                            shape = RoundedCornerShape(26.dp),
-                        ) {
+                        Modifier.hazeEffect(state = hazeState) {
                             backgroundColor = jc.bgB
                             tints = listOf(HazeTint(jc.glassTop.copy(alpha = if (jc.isDark) 0.32f else 0.55f)))
                             blurRadius = 16.dp

@@ -87,7 +87,6 @@ import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.ui.transactions.TransactionsScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.rememberHazeState
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,7 +118,7 @@ class MainActivity : ComponentActivity() {
                     Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
                         val boot by app.settings.bootState.collectAsState(initial = BootState.Loading)
                         // منبع بلور پس‌زمینه برای شیشه‌ی نوبار (backdrop-filter وب)
-                        val hazeState = rememberHazeState()
+                        val hazeState = remember { HazeState() }
                         Box(Modifier.fillMaxSize().haze(hazeState).jibetBackdrop()) {
                             when (boot) {
                                 BootState.Loading -> Splash()

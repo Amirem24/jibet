@@ -5,7 +5,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,10 +40,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -143,6 +142,8 @@ private fun CountUpMoney(value: Double, modifier: Modifier = Modifier) {
             fontFamily = Vazir,
             fontWeight = FontWeight.Black,
             fontSize = 34.sp,
+            // مثل leading-none وب: بدون این، ارتفاع طبیعی فونت کارت را ~۸dp بلندتر می‌کرد
+            lineHeight = 34.sp,
             color = Color.White,
             fontFeatureSettings = "tnum",
         ),
@@ -235,34 +236,34 @@ private fun BalanceCard(totalBalance: Double) {
         Modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 20.dp,
+                // سایه‌ی وب: 0 20px 44px -18px rgba(91,116,233,.55) — پهن و نرم
+                elevation = 24.dp,
                 shape = RoundedCornerShape(26.dp),
-                spotColor = Color(0x8C5B74E9),
+                spotColor = Color(0x665B74E9),
                 ambientColor = Color.Transparent,
             )
             .clip(RoundedCornerShape(26.dp))
             .background(accentGradient())
-            .border(
-                1.dp,
-                Brush.verticalGradient(
-                    listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0.08f))
-                ),
-                RoundedCornerShape(26.dp),
-            )
+            // وب دور کارت بوردر ندارد (فقط هایلایت داخلی سایه) — بوردر قبلی کارت را سنگین نشان می‌داد
             .padding(20.dp),
     ) {
-        // FIX (UI): حباب‌های blur قبلی روی کارت یک «درز عمودی» سخت می‌ساختند؛
-        // حالا هایلایت شعاعی نرم که لبه‌اش در شفافیت محو می‌شود
+        // دو دایره‌ی سفید محو دقیقاً مثل وب: white/15 ‏۱۶۰ بالا-چپ و white/10 ‏۱۷۶ پایین-راست، blur-2xl
+        // Unbounded تا هاله‌ی بلور در مرز باکس بریده نشود و «درز» نسازد؛ clip کارت خودش لبه‌ها را می‌بُرد
         Box(
             Modifier
                 .align(AbsoluteAlignment.TopLeft)
-                .absoluteOffset(x = (-50).dp, y = (-70).dp)
-                .size(210.dp)
-                .background(
-                    Brush.radialGradient(
-                        listOf(Color.White.copy(alpha = 0.16f), Color.Transparent)
-                    )
-                ),
+                .absoluteOffset(x = (-40).dp, y = (-56).dp)
+                .size(160.dp)
+                .blur(40.dp, BlurredEdgeTreatment.Unbounded)
+                .background(Color.White.copy(alpha = 0.15f), CircleShape),
+        )
+        Box(
+            Modifier
+                .align(AbsoluteAlignment.BottomRight)
+                .absoluteOffset(x = 24.dp, y = 64.dp)
+                .size(176.dp)
+                .blur(40.dp, BlurredEdgeTreatment.Unbounded)
+                .background(Color.White.copy(alpha = 0.10f), CircleShape),
         )
 
         Row(
@@ -289,14 +290,7 @@ private fun BalanceCard(totalBalance: Double) {
                 Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.15f))
-                    .border(
-                        1.dp,
-                        Brush.verticalGradient(
-                            listOf(Color.White.copy(alpha = 0.4f), Color.White.copy(alpha = 0.1f))
-                        ),
-                        RoundedCornerShape(16.dp),
-                    ),
+                    .background(Color.White.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -664,14 +658,7 @@ private fun RecentCard(recent: List<TxRow>?, onTab: (String) -> Unit) {
             else -> {
                 Column(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp)) {
                     recentList.forEachIndexed { index, tx ->
-                        if (index > 0) {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(jc.divider)
-                            )
-                        }
+                        // وب بین ردیف‌های آخرین تراکنش‌ها خط جداکننده ندارد (فقط فاصله) — برخلاف کارت حساب‌ها
                         // ورود پله‌ای ردیف‌ها — ۳۰ms فاصله مثل staggerChildren وب
                         FadeIn(delayMs = index * 30) {
                             Row(
