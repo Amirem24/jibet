@@ -190,8 +190,8 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
 
     Column(
         Modifier
-            .fillMaxWidth()
-            // اسکرول با خود شیت است (JibetSheet) — اسکرول تو در تو حذف شد
+            .fillMaxWidth(),
+        // اسکرول با خود شیت است (JibetSheet) — اسکرول تو در تو حذف شد
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         JibetSegmented(
