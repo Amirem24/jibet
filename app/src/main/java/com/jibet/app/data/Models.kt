@@ -4,7 +4,9 @@ package com.jibet.app.data
 enum class Kind { EXPENSE, INCOME;
 
     companion object {
-        fun from(s: String?): Kind = if (s == "INCOME") INCOME else EXPENSE
+        // FIX (debug): قبلاً فقط "INCOME" دقیق شناخته می‌شد و هر مقدار دیگری (مثل "income"
+        // نسخه وب) بی‌صدا EXPENSE می‌شد؛ حالا مثل بقیه‌ی enumها case-insensitive است
+        fun from(s: String?): Kind = entries.firstOrNull { it.name.equals(s, ignoreCase = true) } ?: EXPENSE
     }
 }
 
@@ -12,7 +14,9 @@ enum class Kind { EXPENSE, INCOME;
 enum class AccountKind { CASH, BANK, WALLET, SAVINGS, OTHER;
 
     companion object {
-        fun from(s: String?): AccountKind = entries.firstOrNull { it.name == s } ?: CASH
+        // FIX (debug): case-insensitive مثل Kind — پریست‌های آنبوردینگ kind را کوچک می‌دهند
+        // («bank») و قبلاً همه‌ی حساب‌ها بی‌صدا CASH می‌شدند
+        fun from(s: String?): AccountKind = entries.firstOrNull { it.name.equals(s, ignoreCase = true) } ?: CASH
     }
 }
 
@@ -20,6 +24,6 @@ enum class AccountKind { CASH, BANK, WALLET, SAVINGS, OTHER;
 enum class Frequency { DAILY, WEEKLY, MONTHLY, YEARLY;
 
     companion object {
-        fun from(s: String?): Frequency = entries.firstOrNull { it.name == s } ?: MONTHLY
+        fun from(s: String?): Frequency = entries.firstOrNull { it.name.equals(s, ignoreCase = true) } ?: MONTHLY
     }
 }

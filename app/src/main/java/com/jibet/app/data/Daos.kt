@@ -154,7 +154,7 @@ interface JibetDao {
             LEFT JOIN accounts a ON a.id = t.accountId
         """
         const val TX_FILTER = """
-            (:q = '' OR t.title LIKE '%' || :q || '%' OR t.note LIKE '%' || :q || '%' OR c.name LIKE '%' || :q || '%')
+            (:q = '' OR t.title LIKE '%' || :q || '%' ESCAPE '\' OR t.note LIKE '%' || :q || '%' ESCAPE '\' OR c.name LIKE '%' || :q || '%' ESCAPE '\')
             AND (:qNum = '' OR CAST(CAST(t.amount AS INTEGER) AS TEXT) LIKE '%' || :qNum || '%')
             AND (:kindIsAll OR t.kind = :kind)
             AND (:accountId = 0 OR t.accountId = :accountId)

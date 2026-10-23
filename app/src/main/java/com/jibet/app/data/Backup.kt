@@ -193,6 +193,33 @@ suspend fun JibetRepository.restoreBackup(
         throw IllegalArgumentException("فایل پشتیبان هیچ دسته‌بندی‌ای ندارد")
     }
 
+    // FIX (debug): قبلاً تراکنش/بودجه/تکراری‌ای که حساب یا دسته‌اش در فایل نبود
+    // بی‌صدا با continue رد می‌شد و کاربر با پیام «بازیابی شد» داده از دست می‌داد،
+    // و تاریخ خراب هم بی‌صدا «همین حالا» می‌شد. حالا همه‌ی ارجاع‌ها و تاریخ‌ها
+    // پیش از هر پاک‌سازی بررسی می‌شوند و فایل ناقص اصلاً بازیابی نمی‌شود.
+    val accUids = payload.accounts.mapTo(HashSet()) { it._uid }
+    val catUids = payload.categories.mapTo(HashSet()) { it._uid }
+    var brokenRefs = 0
+    var brokenDates = 0
+    for (t in payload.transactions) {
+        if (t.accountUid !in accUids || t.categoryUid !in catUids) brokenRefs++
+        if (!t.amount.isFinite()) brokenRefs++
+        if (runCatching { Instant.parse(t.date) }.isFailure) brokenDates++
+    }
+    for (b in payload.budgets) {
+        if (b.categoryUid !in catUids || b.jMonth !in 1..12 || !b.amount.isFinite()) brokenRefs++
+    }
+    for (r in payload.recurrings) {
+        if (r.accountUid !in accUids || r.categoryUid !in catUids) brokenRefs++
+        if (runCatching { Instant.parse(r.nextDate) }.isFailure) brokenDates++
+    }
+    if (brokenRefs > 0) {
+        throw IllegalArgumentException("فایل پشتیبان $brokenRefs ارجاع خراب دارد (حساب/دسته‌ی مفقود یا مبلغ نامعتبر)؛ بازیابی انجام نشد")
+    }
+    if (brokenDates > 0) {
+        throw IllegalArgumentException("فایل پشتیبان $brokenDates تاریخ نامعتبر دارد؛ بازیابی انجام نشد")
+    }
+
     // اسنپ‌شات اطمینان از داده‌ی فعلی — اگر هر چیزی در بازیابی خراب شود، این فایل باقی می‌ماند
     if (snapshotFile != null) {
         runCatching {
@@ -298,8 +325,14 @@ suspend fun JibetRepository.exportCsv(): String {
     val categories = dao.allCategories().associateBy { it.id }
     val txs = dao.allTransactions()
 
-    fun cell(v: String): String =
-        if (v.contains(',') || v.contains('"') || v.contains('\n')) "\"${v.replace("\"", "\"\"")}\"" else v
+    fun cell(v: String): String {
+        // FIX (debug): خنثی‌سازی تزریق فرمول اکسل — عنوان/یادداشتی که با = + - @ شروع شود
+        // در Excel/Sheets فرمول اجرا می‌شود؛ با پیشوند ' خنثی‌اش می‌کنیم.
+        val lead = v.trimStart().firstOrNull()
+        val safe = if (lead == '=' || lead == '+' || lead == '-' || lead == '@' || lead == '\t' || lead == '\r') "'$v" else v
+        return if (safe.contains(',') || safe.contains('"') || safe.contains('\n'))
+            "\"${safe.replace("\"", "\"\"")}\"" else safe
+    }
 
     val header = listOf("تاریخ", "نوع", "عنوان", "دسته‌بندی", "حساب", "مبلغ (تومان)", "یادداشت")
     val rows = txs.map { t ->
@@ -309,7 +342,8 @@ suspend fun JibetRepository.exportCsv(): String {
             t.title,
             categories[t.categoryId]?.name ?: "",
             accounts[t.accountId]?.name ?: "",
-            t.amount.toLong().toString(),
+            // FIX (debug): قبلاً اعشار مبلغ با toLong بی‌صدا بریده می‌شد
+            if (t.amount % 1.0 == 0.0) t.amount.toLong().toString() else t.amount.toString(),
             t.note ?: "",
         ).joinToString(",") { cell(it) }
     }

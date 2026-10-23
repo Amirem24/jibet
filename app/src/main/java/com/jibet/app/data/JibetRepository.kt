@@ -102,9 +102,12 @@ class JibetRepository(
     ): Flow<TxPage> {
         // جستجوی مبلغ: فقط وقتی عبارت جستجو رقم دارد، روی عدد (بدون جداکننده) هم LIKE می‌زنیم
         val qNum = com.jibet.app.util.Fmt.digitsOnly(q)
+        // FIX (debug): % و _ در متن جستجو قبلاً wildcard SQL بودند («%» همه‌ی تراکنش‌ها را برمی‌گرداند)؛
+        // حالا literal جستجو می‌شوند (سمت DAO هم ESCAPE '\\' اضافه شد)
+        val qEscaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         return combine(
             dao.watchTxPage(
-                q = q,
+                q = qEscaped,
                 qNum = qNum,
                 kindIsAll = kind == null,
                 kind = kind ?: Kind.EXPENSE,
@@ -116,7 +119,7 @@ class JibetRepository(
                 offset = offset,
             ),
             dao.watchTxTotals(
-                q = q,
+                q = qEscaped,
                 qNum = qNum,
                 kindIsAll = kind == null,
                 kind = kind ?: Kind.EXPENSE,
@@ -355,8 +358,9 @@ class JibetRepository(
 
     suspend fun updateGoal(g: GoalEntity) = dao.updateGoal(g)
 
-    suspend fun depositGoal(id: Long, delta: Double) {
-        val g = dao.getGoal(id) ?: return
+    // FIX (debug): خواندن+نوشتن داخل تراکنش تا دو واریز هم‌زمان یکی دیگری را نبلعد
+    suspend fun depositGoal(id: Long, delta: Double) = db.withTransactionCompat {
+        val g = dao.getGoal(id) ?: return@withTransactionCompat
         dao.updateGoal(g.copy(savedAmount = g.savedAmount + delta))
     }
 
@@ -394,7 +398,8 @@ class JibetRepository(
     /* ================= آنبوردینگ ================= */
 
     /** ذخیره‌ی انتخاب‌های ویزارد؛ فقط وقتی خالی است اجرا می‌شود */
-    suspend fun setup(accounts: List<AccountDraft>, categoryKeys: List<String>) {
+    // FIX (debug): کل ستاپ داخل یک تراکنش است تا قطع‌شدن پروسه وسط کار، نصف حساب/دسته نسازد
+    suspend fun setup(accounts: List<AccountDraft>, categoryKeys: List<String>) = db.withTransactionCompat {
         val accCount = dao.countAccounts()
         val catCount = dao.countCategories()
         if (accCount == 0) {
@@ -601,7 +606,9 @@ class JibetRepository(
             var next = r.nextDate
             var anchor = r.anchorDay
             var guard = 0
-            while (next <= now && guard < 200) {
+            // FIX (debug): سقف از ۲۰۰ به ۱۰۰۰ رسید — تکراری روزانه بعد از ~۷ ماه آفلاین‌بودن
+            // قبلاً در هر اجرا فقط ۲۰۰ قسط ثبت می‌شد و بقیه ۱۵ دقیقه‌ای قطره‌چکانی می‌آمد
+            while (next <= now && guard < 1000) {
                 dao.insertTx(
                     TransactionEntity(
                         amount = r.amount,
