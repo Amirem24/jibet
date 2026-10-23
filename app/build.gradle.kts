@@ -8,7 +8,7 @@ plugins {
 
 // نسخه از CI قابل پاس‌دادن است: ./gradlew -PjibetVersionCode=12 -PjibetVersionName=2.2.0
 val jibetVersionCode: Int = (project.findProperty("jibetVersionCode") as String?)?.toIntOrNull() ?: 9
-val jibetVersionName: String = (project.findProperty("jibetVersionName") as String?) ?: "2.3.3"
+val jibetVersionName: String = (project.findProperty("jibetVersionName") as String?) ?: "2.3.4"
 
 // امضای ریلیز — از Secrets خوانده می‌شود؛ اگر نبود، ریلیز بدون امضای اختصاصی بیلد می‌شود (فقط محلی)
 val keystoreFile: String? = System.getenv("JB_KEYSTORE_PATH")
@@ -86,6 +86,8 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.animation:animation")
     implementation("androidx.navigation:navigation-compose:2.8.0")
+    // بلور واقعی پس‌زمینه (backdrop-filter وب) — برای قرص شیشه‌ای نوبار؛ روی API 31+ فعال است و پایین‌تر فقط tint می‌ماند
+    implementation("dev.chrisbanes.haze:haze:1.2.0")
 
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")

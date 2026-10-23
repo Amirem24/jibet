@@ -38,6 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -49,6 +51,9 @@ import com.jibet.app.ui.components.JibetIcon
 import com.jibet.app.ui.components.accentGradient
 import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeChild
 
 data class NavTab(val route: String, val label: String, val icon: ImageVector)
 
@@ -61,14 +66,17 @@ private val TABS = listOf(
 
 /** نویگیشن پایین با دکمه‌ی + کامل و برجسته — مثل BottomNav نسخه وب.
  *  FIX (UI): قبلاً دکمه‌ی + فرزندِ ردیفِ clip‌شده‌ی قرص بود و به‌صورت نیم‌دایره‌ی بریده
- *  رندر می‌شد و خود قرص هم از پشته‌ی شیشه/سایه/بوردر ناهماهنگ بود؛ حالا قرص یک سطح
- *  ساده‌ی توپر است و دکمه‌ی + خواهرِ آن و بدون clip، کامل روی لبه می‌نشیند. */
+ *  رندر می‌شد. حالا قرص دقیقاً مثل وب است: شیشه‌ای (jb-glass: گرادیان سفید نیمه‌شفاف +
+ *  بوردر روشن + سایه‌ی نرم و پهن 0 18px 40px -16px rgba(35,43,59,.28))، عرض
+ *  min(94%, 420px)، شعاع 26، و دکمه‌ی + خواهرِ آن و بدون clip، مرکزش دقیقاً روی
+ *  لبه‌ی بالایی قرص (offset ‎-28dp = نصف قطر) با هایلایت داخلی لبه‌ی بالا مثل وب. */
 @Composable
 fun JibetBottomNav(
     current: String,
     onTab: (String) -> Unit,
     onAdd: () -> Unit,
     modifier: Modifier = Modifier,
+    hazeState: HazeState? = null,
 ) {
     val jc = LocalJibetColors.current
     Box(
@@ -80,29 +88,55 @@ fun JibetBottomNav(
     ) {
         Row(
             Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 420.dp)
                 .height(64.dp)
                 .shadow(
-                    16.dp,
+                    18.dp,
                     RoundedCornerShape(26.dp),
-                    spotColor = if (jc.isDark) Color(0x66000000) else Color(0x33232B3B),
+                    spotColor = if (jc.isDark) Color(0x66000000) else Color(0x47232B3B),
                     ambientColor = Color.Transparent,
                 )
                 .clip(RoundedCornerShape(26.dp))
-                .background(jc.card)
-                .border(1.dp, jc.border, RoundedCornerShape(26.dp))
+                // شیشه‌ی وب (jb-glass): بلور واقعی پس‌زمینه (backdrop-filter: blur(22px)) با Haze
+                // + tint سفید نیمه‌شفاف؛ بدون Haze (API پایین) گرادیان شیشه‌ای جایگزین می‌شود
+                .then(
+                    if (hazeState != null) {
+                        Modifier.hazeChild(
+                            state = hazeState,
+                            shape = RoundedCornerShape(26.dp),
+                        ) {
+                            backgroundColor = jc.bgB
+                            tints = listOf(HazeTint(jc.glassTop.copy(alpha = if (jc.isDark) 0.32f else 0.55f)))
+                            blurRadius = 16.dp
+                            noiseFactor = 0f
+                        }
+                    } else {
+                        Modifier.background(
+                            Brush.linearGradient(
+                                listOf(jc.glassTop, jc.glassBottom),
+                                start = Offset(0f, 0f),
+                                end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+                            )
+                        )
+                    }
+                )
+                .border(
+                    1.dp,
+                    Brush.verticalGradient(listOf(jc.glassBorder, jc.glassBorder.copy(alpha = jc.glassBorder.alpha * 0.2f))),
+                    RoundedCornerShape(26.dp),
+                )
                 .padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TABS.slice(0..1).forEach { tab ->
-                NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) }, modifier = Modifier.weight(1f))
+                NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) }, modifier = Modifier.width(68.dp))
             }
-            // جای خالی دکمه‌ی مرکزی
+            // جای خالی دکمه‌ی مرکزی (w-16 وب)
             Spacer(Modifier.width(64.dp))
             TABS.slice(2..3).forEach { tab ->
-                NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) }, modifier = Modifier.weight(1f))
+                NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) }, modifier = Modifier.width(68.dp))
             }
         }
         // دکمه‌ی + — دایره‌ی کامل، مرکزش روی لبه‌ی بالایی قرص (مثل نسخه وب)
@@ -112,7 +146,7 @@ fun JibetBottomNav(
         Box(
             Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = (-26).dp)
+                .offset(y = (-28).dp)
                 .scale(scale)
                 .shadow(
                     16.dp,
@@ -126,6 +160,19 @@ fun JibetBottomNav(
                 .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onAdd),
             contentAlignment = Alignment.Center,
         ) {
+            // هایلایت داخلی لبه‌ی بالا — inset 0 2px 4px rgba(255,255,255,.4) وب
+            Box(
+                Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.White.copy(alpha = 0.38f), Color.Transparent),
+                            startY = 0f,
+                            endY = 26f,
+                        )
+                    )
+            )
             Icon(
                 Icons.Rounded.Add,
                 contentDescription = "ثبت تراکنش جدید",

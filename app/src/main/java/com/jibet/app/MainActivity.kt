@@ -85,6 +85,9 @@ import com.jibet.app.ui.theme.JibetTheme
 import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
 import com.jibet.app.ui.transactions.TransactionsScreen
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.rememberHazeState
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -115,11 +118,13 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
                         val boot by app.settings.bootState.collectAsState(initial = BootState.Loading)
-                        Box(Modifier.fillMaxSize().jibetBackdrop()) {
+                        // منبع بلور پس‌زمینه برای شیشه‌ی نوبار (backdrop-filter وب)
+                        val hazeState = rememberHazeState()
+                        Box(Modifier.fillMaxSize().haze(hazeState).jibetBackdrop()) {
                             when (boot) {
                                 BootState.Loading -> Splash()
                                 BootState.Fresh -> OnboardingScreen()
-                                BootState.Done -> MainApp(app)
+                                BootState.Done -> MainApp(app, hazeState)
                             }
                         }
                     }
@@ -189,7 +194,7 @@ private fun Splash() {
 }
 
 @Composable
-private fun MainApp(app: JibetApp) {
+private fun MainApp(app: JibetApp, hazeState: HazeState) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val current = backStack?.destination?.route ?: "home"
@@ -223,6 +228,7 @@ private fun MainApp(app: JibetApp) {
             },
             onAdd = { UiBus.openAdd() },
             modifier = Modifier.align(Alignment.BottomCenter),
+            hazeState = hazeState,
         )
         AddTransactionSheet()
         TransactionDetailSheet()
