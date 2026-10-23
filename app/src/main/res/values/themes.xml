@@ -4,5 +4,7 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
+        <!-- پس‌زمینه‌ی پنجره هم‌رنگ با شروع پس‌زمینه‌ی اپ — بدون فلش سفید هنگام اجرا -->
+        <item name="android:windowBackground">@color/jibet_bg_start</item>
     </style>
 </resources>

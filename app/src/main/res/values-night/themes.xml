@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Jibet" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <!-- پس‌زمینه‌ی پنجره‌ی تیره — بدون فلش سفید در حالت تاریک -->
+        <item name="android:windowBackground">@color/jibet_bg_start</item>
+    </style>
+</resources>

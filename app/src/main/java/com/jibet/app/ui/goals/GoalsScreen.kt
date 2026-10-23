@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,12 +44,12 @@ import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,13 +61,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.AndroidViewModel
@@ -82,6 +79,7 @@ import com.jibet.app.ui.components.GlassIconButton
 import com.jibet.app.ui.components.IconBubble
 import com.jibet.app.ui.components.JibetChip
 import com.jibet.app.ui.components.JibetField
+import com.jibet.app.ui.components.JibetAmountCard
 import com.jibet.app.ui.components.JibetKeypad
 import com.jibet.app.ui.components.JibetProgress
 import com.jibet.app.ui.components.JibetSheet
@@ -501,6 +499,8 @@ private fun SmallCircleButton(onClick: () -> Unit, content: @Composable () -> Un
 private fun DepositSheet(goal: GoalEntity, onClose: () -> Unit, vm: GoalsViewModel) {
     var amount by remember { mutableStateOf("") }
     var saving by remember { mutableStateOf(false) }
+    // سوییچ کیپد اپ ↔ کیبورد سیستم — کنار فیلد مبلغ
+    var useSystemKeyboard by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val color = parseColor(goal.colorHex)
     val pct = if (goal.targetAmount > 0) ((goal.savedAmount / goal.targetAmount) * 100.0).coerceIn(0.0, 100.0) else 0.0
@@ -545,9 +545,17 @@ private fun DepositSheet(goal: GoalEntity, onClose: () -> Unit, vm: GoalsViewMod
                 )
             }
 
-            // مبلغ جدید
-            AmountDisplayCard(label = "مبلغ پس‌انداز", amount = amount)
-            JibetKeypad(value = amount, onChange = { amount = it })
+            // مبلغ جدید + سوییچ کیپد اپ/کیبورد سیستم
+            JibetAmountCard(
+                label = "مبلغ پس‌انداز",
+                amount = amount,
+                onAmountChange = { amount = it },
+                systemKeyboard = useSystemKeyboard,
+                onToggleKeyboard = { useSystemKeyboard = !useSystemKeyboard },
+            )
+            if (!useSystemKeyboard) {
+                JibetKeypad(value = amount, onChange = { amount = it })
+            }
 
             // پول هدف‌ها یک پاکت مجازی است — جدا از موجودی حساب‌ها
             Text(
@@ -600,6 +608,8 @@ private fun GoalForm(editing: GoalEntity?, onClose: () -> Unit, vm: GoalsViewMod
     var deadline by remember { mutableStateOf(editing?.deadline) }
     var saving by remember { mutableStateOf(false) }
     var armed by remember { mutableStateOf(false) }
+    // سوییچ کیپد اپ ↔ کیبورد سیستم — کنار فیلد مبلغ
+    var useSystemKeyboard by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val jc = LocalJibetColors.current
 
@@ -628,9 +638,17 @@ private fun GoalForm(editing: GoalEntity?, onClose: () -> Unit, vm: GoalsViewMod
             }
         }
 
-        // مبلغ هدف
-        AmountDisplayCard(label = "مبلغ هدف", amount = amount)
-        JibetKeypad(value = amount, onChange = { amount = it })
+        // مبلغ هدف + سوییچ کیپد اپ/کیبورد سیستم
+        JibetAmountCard(
+            label = "مبلغ هدف",
+            amount = amount,
+            onAmountChange = { amount = it },
+            systemKeyboard = useSystemKeyboard,
+            onToggleKeyboard = { useSystemKeyboard = !useSystemKeyboard },
+        )
+        if (!useSystemKeyboard) {
+            JibetKeypad(value = amount, onChange = { amount = it })
+        }
 
         // پس‌انداز اولیه (فقط افزودن)
         if (editing == null) {
@@ -814,45 +832,6 @@ private fun GoalIconOption(iconName: String, color: Color, active: Boolean, onCl
 }
 
 /** کارت نمایش مبلغ با برچسب — مثل کارت‌های وب با dir=ltr */
-@Composable
-private fun AmountDisplayCard(label: String, amount: String) {
-    val jc = LocalJibetColors.current
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .jibetCard()
-            .heightIn(min = 64.dp)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            label,
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
-        )
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (amount.isEmpty()) {
-                    Text(
-                        "۰",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = jc.faint),
-                    )
-                } else {
-                    Text(
-                        Fmt.money(amount.toDoubleOrNull() ?: 0.0),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = jc.ink),
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.inkSoft),
-                )
-            }
-        }
-    }
-}
-
 /** فیلد ورودی متنی جیبت — BasicTextField داخل باکس ۴۸dp */
 @Composable
 private fun JibetTextInput(

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- شروع گرادیان پس‌زمینه (bg-a وب) — تیره -->
+    <color name="jibet_bg_start">#0F1420</color>
+</resources>

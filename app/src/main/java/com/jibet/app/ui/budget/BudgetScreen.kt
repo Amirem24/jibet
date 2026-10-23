@@ -52,6 +52,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,9 +81,11 @@ import com.jibet.app.data.BudgetRow
 import com.jibet.app.data.CategoryEntity
 import com.jibet.app.data.Kind
 import com.jibet.app.ui.components.AccentButton
+import com.jibet.app.ui.components.CategoryGridCell
 import com.jibet.app.ui.components.EmptyState
 import com.jibet.app.ui.components.GlassIconButton
 import com.jibet.app.ui.components.IconBubble
+import com.jibet.app.ui.components.JibetAmountCard
 import com.jibet.app.ui.components.JibetKeypad
 import com.jibet.app.ui.components.JibetProgress
 import com.jibet.app.ui.components.JibetSheet
@@ -657,6 +660,8 @@ private fun BudgetSheet(
     var amount by remember { mutableStateOf(editing?.let { rawAmount(it.amount) } ?: "") }
     var catId by remember { mutableStateOf(editing?.categoryId) }
     var saving by remember { mutableStateOf(false) }
+    // سوییچ کیپد اپ ↔ کیبورد سیستم — کنار فیلد مبلغ
+    var useSystemKeyboard by rememberSaveable { mutableStateOf(false) }
 
     // در حالت افزودن فقط دسته‌های بدون بودجه؛ در ویرایش همه با تیکِ دارای‌بودجه
     val available = if (editing != null) cats else cats.filter { it.id !in existingIds }
@@ -674,34 +679,18 @@ private fun BudgetSheet(
                 style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
             )
 
-            // نمایش مبلغ
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .jibetCard()
-                    .heightIn(min = 64.dp)
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "مبلغ بودجه",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
-                )
-                // مثل dir=ltr وب: عدد سمت چپ و «تومان» سمت راست آن
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            if (amount.isEmpty()) "۰" else Fmt.money(amountValue),
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = if (amount.isEmpty()) jc.faint else jc.ink, fontFeatureSettings = "tnum"),
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "تومان",
-                            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.inkSoft),
-                        )
-                    }
-                }
+            // نمایش مبلغ + سوییچ کیپد اپ/کیبورد سیستم
+            JibetAmountCard(
+                label = "مبلغ بودجه",
+                amount = amount,
+                onAmountChange = { amount = it },
+                systemKeyboard = useSystemKeyboard,
+                onToggleKeyboard = { useSystemKeyboard = !useSystemKeyboard },
+            )
+
+            // کیپد مبلغ — چسبیده به کارت مبلغ؛ در حالت کیبورد سیستم مخفی می‌شود
+            if (!useSystemKeyboard) {
+                JibetKeypad(value = amount, onChange = { amount = it })
             }
 
             // انتخاب دسته
@@ -718,12 +707,33 @@ private fun BudgetSheet(
                         available.chunked(3).forEach { rowCats ->
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 rowCats.forEach { category ->
-                                    CategoryCell(
-                                        category = category,
+                                    CategoryGridCell(
+                                        name = category.name,
+                                        icon = category.icon,
+                                        colorHex = category.colorHex,
                                         active = category.id == catId,
-                                        hasBudget = existingIds.contains(category.id),
                                         onClick = { catId = category.id },
-                                        modifier = Modifier.weight(1f),
+                                        badge = if (existingIds.contains(category.id)) {
+                                            {
+                                                Box(
+                                                    Modifier
+                                                        .size(16.dp)
+                                                        .shadow(3.dp, CircleShape, spotColor = Color(0x33232B3B), ambientColor = Color.Transparent)
+                                                        .clip(CircleShape)
+                                                        .background(jc.income),
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    Icon(
+                                                        Icons.Rounded.Check,
+                                                        contentDescription = "دارای بودجه",
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(11.dp),
+                                                    )
+                                                }
+                                            }
+                                        } else {
+                                            null
+                                        },
                                     )
                                 }
                                 repeat(3 - rowCats.size) { Spacer(Modifier.weight(1f)) }
@@ -732,9 +742,6 @@ private fun BudgetSheet(
                     }
                 }
             }
-
-            // کیپد مبلغ
-            JibetKeypad(value = amount, onChange = { amount = it })
 
             AccentButton(
                 text = if (saving) "در حال ذخیره…" else if (editing != null) "ذخیره‌ی تغییرات" else "ثبت بودجه",
@@ -770,74 +777,6 @@ private fun SheetHint(text: String) {
             style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Normal, fontSize = 13.sp, color = jc.inkSoft),
             textAlign = TextAlign.Center,
         )
-    }
-}
-
-/** خانه‌ی انتخاب دسته — grid-cols-3 مثل وب */
-@Composable
-private fun CategoryCell(
-    category: CategoryEntity,
-    active: Boolean,
-    hasBudget: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val jc = LocalJibetColors.current
-    val color = parseColor(category.colorHex)
-    Box(modifier) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .then(
-                    if (active) {
-                        Modifier
-                            .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = color.copy(alpha = 0.8f), ambientColor = Color.Transparent)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(color)
-                    } else {
-                        Modifier
-                            .shadow(2.dp, RoundedCornerShape(16.dp))
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(jc.inputBg)
-                    }
-                )
-                .pressableScale(onClick = onClick, pressedScale = 0.96f)
-                .padding(horizontal = 8.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            IconBubble(
-                icon = category.icon,
-                color = if (active) Color.White else color,
-                size = 34.dp,
-                iconSize = 17.dp,
-            )
-            Text(
-                category.name,
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 11.5.sp, lineHeight = 16.sp, color = if (active) Color.White else jc.textMid),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        if (hasBudget) {
-            // بج دارای‌بودجه — چپِ فیزیکی مثل left-1.5 وب
-            Box(
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(jc.income),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Rounded.Check,
-                    contentDescription = "دارای بودجه",
-                    tint = Color.White,
-                    modifier = Modifier.size(11.dp),
-                )
-            }
-        }
     }
 }
 

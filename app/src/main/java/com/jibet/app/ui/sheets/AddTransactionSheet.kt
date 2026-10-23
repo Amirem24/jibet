@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -40,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,7 +65,9 @@ import com.jibet.app.UiBus
 import com.jibet.app.data.AccountRow
 import com.jibet.app.data.CategoryEntity
 import com.jibet.app.data.Kind
+import com.jibet.app.ui.components.CategoryGridCell
 import com.jibet.app.ui.components.IconBubble
+import com.jibet.app.ui.components.JibetAmountCard
 import com.jibet.app.ui.components.JibetField
 import com.jibet.app.ui.components.JibetKeypad
 import com.jibet.app.ui.components.JibetSegmented
@@ -172,6 +174,8 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
     var accountId by remember { mutableStateOf<Long?>(null) }
     var dateOffset by remember { mutableStateOf(0) }
     var note by remember { mutableStateOf("") }
+    // سوییچ کیپد اپ ↔ کیبورد سیستم — کنار فیلد مبلغ
+    var useSystemKeyboard by rememberSaveable { mutableStateOf(false) }
 
     // حساب پیش‌فرض: حساب isDefault یا اولین حساب (مقدار اولیه‌ی useState وب)
     LaunchedEffect(accounts) {
@@ -200,40 +204,15 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
             activeColor = if (txKind == Kind.EXPENSE) jc.expense else jc.income,
         )
 
-        // نمایش مبلغ
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .jibetCard()
-                .heightIn(min = 74.dp)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                "مبلغ",
-                style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
-            )
-            // ترتیب فرزندان معکوس است تا چیدمان LTR وب (عدد سمت چپ، «تومان» سمت راست) بازتولید شود
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
-                )
-                Spacer(Modifier.width(8.dp))
-                if (amountStr.isEmpty()) {
-                    Text(
-                        "۰",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = jc.faint),
-                    )
-                } else {
-                    Text(
-                        Fmt.money(amount),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = jc.ink),
-                    )
-                }
-            }
-        }
+        // نمایش مبلغ + دکمه‌ی سوییچ کیپد اپ/کیبورد سیستم
+        JibetAmountCard(
+            label = "مبلغ",
+            amount = amountStr,
+            onAmountChange = { amountStr = it },
+            systemKeyboard = useSystemKeyboard,
+            onToggleKeyboard = { useSystemKeyboard = !useSystemKeyboard },
+            bigFontSize = 24.sp,
+        )
 
         // مبالغ سریع
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -254,6 +233,11 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
                     )
                 }
             }
+        }
+
+        // کیپد عددی فارسی — چسبیده به مبلغ (نه تهِ شیت)؛ در حالت کیبورد سیستم مخفی می‌شود
+        if (!useSystemKeyboard) {
+            JibetKeypad(value = amountStr, onChange = { amountStr = it })
         }
 
         // دسته‌بندی
@@ -283,8 +267,10 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
                     cats.chunked(3).forEach { rowCats ->
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             rowCats.forEach { c ->
-                                CategoryCell(
-                                    c = c,
+                                CategoryGridCell(
+                                    name = c.name,
+                                    icon = c.icon,
+                                    colorHex = c.colorHex,
                                     active = c.id == categoryId,
                                     onClick = { categoryId = c.id },
                                 )
@@ -388,9 +374,6 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
             )
         }
 
-        // کیبورد عددی فارسی
-        JibetKeypad(value = amountStr, onChange = { amountStr = it })
-
         // دکمه ثبت
         SaveButton(
             kind = txKind,
@@ -406,50 +389,6 @@ private fun AddForm(vm: AddTransactionViewModel, initialKind: Kind) {
                     note = note,
                 )
             },
-        )
-    }
-}
-
-/** سلول دسته‌بندی در گرید ۳ ستونه */
-@Composable
-private fun RowScope.CategoryCell(c: CategoryEntity, active: Boolean, onClick: () -> Unit) {
-    val jc = LocalJibetColors.current
-    val color = parseColor(c.colorHex)
-    Column(
-        Modifier
-            .weight(1f)
-            .then(
-                if (active) {
-                    Modifier.shadow(10.dp, RoundedCornerShape(16.dp), spotColor = color, ambientColor = Color.Transparent)
-                } else {
-                    Modifier.shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x0D232B3B), ambientColor = Color.Transparent)
-                }
-            )
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (active) color else jc.inputBg)
-            .pressableScale(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        IconBubble(
-            icon = c.icon,
-            color = if (active) Color.White else color,
-            size = 34.dp,
-            iconSize = 17.dp,
-        )
-        Text(
-            c.name,
-            style = TextStyle(
-                fontFamily = Vazir,
-                fontWeight = FontWeight.Bold,
-                fontSize = 11.5.sp,
-                lineHeight = 16.sp,
-                color = if (active) Color.White else jc.textMid,
-            ),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
         )
     }
 }

@@ -17,12 +17,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -52,6 +55,8 @@ import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.Flight
 import androidx.compose.material.icons.rounded.FitnessCenter
+import androidx.compose.material.icons.rounded.Dialpad
+import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.Gamepad
 import androidx.compose.material.icons.rounded.GpsFixed
 import androidx.compose.material.icons.rounded.HelpOutline
@@ -122,6 +127,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jibet.app.data.Kind
@@ -408,7 +414,7 @@ fun ScreenHeader(
     Row(
         modifier
             .fillMaxWidth()
-            .padding(top = 16.dp, bottom = 12.dp)
+            .padding(top = 12.dp, bottom = 12.dp)
             .drawBehind {
                 drawRect(
                     Brush.verticalGradient(
@@ -787,17 +793,7 @@ fun AmountInput(
             BasicTextField(
                 value = fieldValue,
                 onValueChange = { input ->
-                    // تعداد رقم‌های پیش از مکان‌نمای کاربر حفظ می‌شود تا پرش نکند
-                    val digitsBefore = input.text.take(input.selection.start).count { it.isDigit() }
-                    val formatted = if (input.text.isEmpty()) "" else Fmt.money(Fmt.parseNumber(input.text))
-                    var idx = 0
-                    var count = 0
-                    for ((i, c) in formatted.withIndex()) {
-                        if (count >= digitsBefore) break
-                        if (c.isDigit()) count++
-                        idx = i + 1
-                    }
-                    fieldValue = TextFieldValue(formatted, TextRange(idx))
+                    fieldValue = formatAmountInput(input)
                     onValueChange(input.text)
                 },
                 singleLine = true,
@@ -814,6 +810,230 @@ fun AmountInput(
                     style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = jc.faint),
                     modifier = Modifier.align(Alignment.CenterStart),
                 )
+            }
+        }
+    }
+}
+
+/* ================= مبلغ و دسته‌بندی — اجزای مشترک همه‌ی شیت‌ها ================= */
+
+/** فرمت‌کردن ورودی مبلغ با حفظ مکان‌نما (تعداد رقم‌های پیش از کرسر حفظ می‌شود) */
+fun formatAmountInput(input: TextFieldValue): TextFieldValue {
+    val digitsBefore = input.text.take(input.selection.start).count { it.isDigit() }
+    val formatted = if (input.text.isEmpty()) "" else Fmt.money(Fmt.parseNumber(input.text))
+    var idx = 0
+    var count = 0
+    for ((i, c) in formatted.withIndex()) {
+        if (count >= digitsBefore) break
+        if (c.isDigit()) count++
+        idx = i + 1
+    }
+    return TextFieldValue(formatted, TextRange(idx))
+}
+
+/** فیلد بزرگ مبلغ برای حالت «کیبورد سیستم» — همان کارت، ولی قابل‌ویرایش با کرسر پایدار */
+@Composable
+private fun BigAmountField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    fontSize: TextUnit,
+) {
+    val jc = LocalJibetColors.current
+    var fieldValue by remember { mutableStateOf(TextFieldValue("")) }
+    LaunchedEffect(value) {
+        val needsSync =
+            Fmt.parseNumber(fieldValue.text) != Fmt.parseNumber(value) ||
+            fieldValue.text.isEmpty() != value.isEmpty()
+        if (needsSync) {
+            val formatted = if (value.isEmpty()) "" else Fmt.money(Fmt.parseNumber(value))
+            fieldValue = TextFieldValue(formatted, TextRange(formatted.length))
+        }
+    }
+    Box(
+        Modifier.widthIn(min = 96.dp, max = 168.dp),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
+        BasicTextField(
+            value = fieldValue,
+            onValueChange = { input ->
+                fieldValue = formatAmountInput(input)
+                onValueChange(input.text)
+            },
+            singleLine = true,
+            textStyle = TextStyle(
+                fontFamily = com.jibet.app.ui.theme.Vazir,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = fontSize,
+                color = jc.ink,
+                textAlign = TextAlign.End,
+            ),
+            cursorBrush = SolidColor(jc.accentA),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (fieldValue.text.isEmpty()) {
+            Text(
+                "۰",
+                style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.ExtraBold, fontSize = fontSize, color = jc.faint),
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
+        }
+    }
+}
+
+/** دکمه‌ی سوییچ کیپد اپ ↔ کیبورد سیستم — کنار فیلد مبلغ */
+@Composable
+private fun KeyboardToggleIcon(systemKeyboard: Boolean, onToggle: () -> Unit) {
+    val jc = LocalJibetColors.current
+    Box(
+        Modifier
+            .size(32.dp)
+            .jibetGlass(CircleShape)
+            .pressableScale(onClick = onToggle, pressedScale = 0.88f, role = Role.Button),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            if (systemKeyboard) Icons.Rounded.Dialpad else Icons.Rounded.Keyboard,
+            contentDescription = if (systemKeyboard) "استفاده از کیپد داخل برنامه" else "استفاده از کیبورد سیستم",
+            tint = jc.textMid,
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
+
+/** کارت مبلغ یکدست همه‌ی شیت‌ها — نمایش بزرگ (کیپد اپ) یا ورودی متنی (کیبورد سیستم)
+ *  + دکمه‌ی کوچک سوییچ کنار مبلغ. جایگزین AmountDisplayCardهای پراکنده. */
+@Composable
+fun JibetAmountCard(
+    label: String,
+    amount: String,
+    onAmountChange: (String) -> Unit,
+    systemKeyboard: Boolean,
+    onToggleKeyboard: () -> Unit,
+    modifier: Modifier = Modifier,
+    bigFontSize: TextUnit = 22.sp,
+) {
+    val jc = LocalJibetColors.current
+    Row(
+        modifier
+            .fillMaxWidth()
+            .jibetCard()
+            .heightIn(min = 74.dp)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
+        )
+        // dir=ltr وب: گروه مبلغ سمت چپ؛ دکمه‌ی سوییچ هم انتهای همان گروه
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (systemKeyboard) {
+                    BigAmountField(value = amount, onValueChange = onAmountChange, fontSize = bigFontSize)
+                } else {
+                    Text(
+                        "تومان",
+                        style = TextStyle(fontFamily = com.jibet.app.ui.theme.Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (amount.isEmpty()) "۰" else Fmt.money(Fmt.parseNumber(amount)),
+                        style = TextStyle(
+                            fontFamily = com.jibet.app.ui.theme.Vazir,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = bigFontSize,
+                            color = if (amount.isEmpty()) jc.faint else jc.ink,
+                        ),
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                KeyboardToggleIcon(systemKeyboard = systemKeyboard, onToggle = onToggleKeyboard)
+            }
+        }
+    }
+}
+
+/** سلول دسته‌بندی یکدست گرید ۳ ستونه — حالت انتخاب: پس‌زمینه‌ی رنگی + محتوای سفید + تیک.
+ *  همه‌ی شیت‌ها (ثبت تراکنش، بودجه، تکراری، …) از همین سلول استفاده می‌کنند. */
+@Composable
+fun RowScope.CategoryGridCell(
+    name: String,
+    icon: String,
+    colorHex: String,
+    active: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    badge: (@Composable () -> Unit)? = null,
+) {
+    val jc = LocalJibetColors.current
+    val cc = parseColor(colorHex)
+    Box(
+        modifier
+            .weight(1f)
+            .then(
+                if (active) {
+                    Modifier.shadow(10.dp, RoundedCornerShape(16.dp), spotColor = cc.copy(alpha = 0.55f), ambientColor = Color.Transparent)
+                } else {
+                    Modifier.shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x0D232B3B), ambientColor = Color.Transparent)
+                }
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (active) cc else jc.inputBg)
+            .pressableScale(onClick = onClick, role = Role.Button)
+            .padding(horizontal = 8.dp, vertical = 12.dp),
+    ) {
+        Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            IconBubble(
+                icon = icon,
+                color = if (active) Color.White else cc,
+                size = 34.dp,
+                iconSize = 17.dp,
+            )
+            Text(
+                name,
+                style = TextStyle(
+                    fontFamily = com.jibet.app.ui.theme.Vazir,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.5.sp,
+                    lineHeight = 16.sp,
+                    color = if (active) Color.White else jc.textMid,
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        // تیک انتخاب — دایره‌ی سفید + تیکِ رنگی، گوشه‌ی بالا (مثل left-1.5 وب در RTL)
+        if (active) {
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(5.dp)
+                    .size(16.dp)
+                    .shadow(3.dp, CircleShape, spotColor = Color(0x33232B3B), ambientColor = Color.Transparent)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = cc,
+                    modifier = Modifier.size(11.dp),
+                )
+            }
+        }
+        // بج اختیاری (مثل «دارای بودجه») — گوشه‌ی مقابل تا با تیک تداخل نکند
+        if (badge != null) {
+            Box(Modifier.align(Alignment.TopStart).padding(5.dp)) {
+                badge()
             }
         }
     }

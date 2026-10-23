@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -48,6 +47,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -73,7 +73,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jibet.app.JibetApp
-import com.jibet.app.data.CategoryEntity
 import com.jibet.app.data.Frequency
 import com.jibet.app.data.Kind
 import com.jibet.app.data.RecurringEntity
@@ -85,6 +84,8 @@ import com.jibet.app.ui.components.GlassIconButton
 import com.jibet.app.ui.components.IconBubble
 import com.jibet.app.ui.components.JibetChip
 import com.jibet.app.ui.components.JibetField
+import com.jibet.app.ui.components.CategoryGridCell
+import com.jibet.app.ui.components.JibetAmountCard
 import com.jibet.app.ui.components.JibetKeypad
 import com.jibet.app.ui.components.JibetSegmented
 import com.jibet.app.ui.components.JibetSheet
@@ -394,6 +395,8 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
     var frequency by remember { mutableStateOf(editing?.frequency ?: Frequency.MONTHLY) }
     var saving by remember { mutableStateOf(false) }
     var armed by remember { mutableStateOf(false) }
+    // سوییچ کیپد اپ ↔ کیبورد سیستم — کنار فیلد مبلغ
+    var useSystemKeyboard by rememberSaveable { mutableStateOf(false) }
 
     // انتخاب پیش‌فرض حساب مثل وب: پیش‌فرض → اولین حساب
     LaunchedEffect(accounts) {
@@ -445,9 +448,17 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
                 }
             }
 
-            // مبلغ
-            AmountDisplayCard(label = "مبلغ هر بار", amount = amount)
-            JibetKeypad(value = amount, onChange = { amount = it })
+            // مبلغ + سوییچ کیپد اپ/کیبورد سیستم
+            JibetAmountCard(
+                label = "مبلغ هر بار",
+                amount = amount,
+                onAmountChange = { amount = it },
+                systemKeyboard = useSystemKeyboard,
+                onToggleKeyboard = { useSystemKeyboard = !useSystemKeyboard },
+            )
+            if (!useSystemKeyboard) {
+                JibetKeypad(value = amount, onChange = { amount = it })
+            }
 
             // دسته‌بندی
             Column {
@@ -468,11 +479,12 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
                         categories.chunked(3).forEach { rowCats ->
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 rowCats.forEach { c ->
-                                    CategoryCell(
-                                        c = c,
+                                    CategoryGridCell(
+                                        name = c.name,
+                                        icon = c.icon,
+                                        colorHex = c.colorHex,
                                         active = c.id == categoryId,
                                         onClick = { categoryId = c.id },
-                                        modifier = Modifier.weight(1f),
                                     )
                                 }
                                 repeat(3 - rowCats.size) { Spacer(Modifier.weight(1f)) }
@@ -618,45 +630,6 @@ private fun RecurringSheet(editing: RecurringRow?, vm: RecurringViewModel, onClo
 }
 
 /** سلول دسته‌بندی — گرید ۳ ستونه مثل وب */
-@Composable
-private fun CategoryCell(c: CategoryEntity, active: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val jc = LocalJibetColors.current
-    val cc = parseColor(c.colorHex)
-    Column(
-        modifier
-            .shadow(
-                if (active) 10.dp else 2.dp,
-                RoundedCornerShape(16.dp),
-                spotColor = if (active) cc.copy(alpha = 0.55f) else Color(0x1A232B3B),
-                ambientColor = Color.Transparent,
-            )
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (active) cc else jc.inputBg)
-            .pressableScale(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        IconBubble(
-            icon = c.icon,
-            color = if (active) Color.White else cc,
-            size = 34.dp,
-            iconSize = 17.dp,
-        )
-        Text(
-            c.name,
-            style = TextStyle(
-                fontFamily = Vazir,
-                fontWeight = FontWeight.Bold,
-                fontSize = 11.5.sp,
-                color = if (active) Color.White else jc.textMid,
-            ),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
 /** چیپ حساب افقی مثل وب */
 @Composable
 private fun AccountChip(name: String, icon: String, colorHex: String, active: Boolean, onClick: () -> Unit) {
@@ -780,46 +753,6 @@ private fun TwoStepDeleteButton(armed: Boolean, label: String, armedLabel: Strin
                 color = if (armed) Color.White else jc.expense,
             ),
         )
-    }
-}
-
-/** کارت نمایش مبلغ با برچسب — مثل کارت‌های وب با dir=ltr */
-@Composable
-private fun AmountDisplayCard(label: String, amount: String) {
-    val jc = LocalJibetColors.current
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .jibetCard()
-            .heightIn(min = 64.dp)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            label,
-            style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = jc.inkSoft),
-        )
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (amount.isEmpty()) {
-                    Text(
-                        "۰",
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = jc.faint),
-                    )
-                } else {
-                    Text(
-                        Fmt.money(amount.toDoubleOrNull() ?: 0.0),
-                        style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = jc.ink),
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "تومان",
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.inkSoft),
-                )
-            }
-        }
     }
 }
 

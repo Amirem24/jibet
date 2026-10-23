@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -208,10 +209,14 @@ private fun MainApp(app: JibetApp) {
         JibetBottomNav(
             current = current,
             onTab = { tab ->
+                // کلیک روی تب فعلی: هیچ کاری نکن — صفحه نباید دوباره لود/رفرش شود
+                if (tab == current) return@JibetBottomNav
                 nav.navigate(tab) {
-                    popUpTo("home") { inclusive = tab == "home"; saveState = false }
+                    // الگوی رسمی تب‌های Navigation Compose: ذخیره/بازیابی وضعیت تب‌ها
+                    // تا جابجایی بدون رفرش کامل و با حفظ اسکرول باشد
+                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                     launchSingleTop = true
-                    restoreState = false
+                    restoreState = true
                 }
             },
             onAdd = { UiBus.openAdd() },

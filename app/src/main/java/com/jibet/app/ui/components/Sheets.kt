@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,9 +57,12 @@ fun JibetSheet(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
         // سطح opaque — محتوای صفحه‌ی زیرین نباید از داخل شیت دیده شود
+        // سقف ارتفاع ۹۰٪ صفحه — شیت هرگز full-page نمی‌شود (مثل max-h وب، ولی جمع‌وجورتر برای موبایل)
+        val maxSheetHeight = (LocalConfiguration.current.screenHeightDp * 0.90f).dp
         Column(
             Modifier
                 .fillMaxWidth()
+                .heightIn(max = maxSheetHeight)
                 .jibetSheetSurface(shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .imePadding()
                 .navigationBarsPadding()
