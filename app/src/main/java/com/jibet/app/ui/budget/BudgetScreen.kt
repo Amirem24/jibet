@@ -209,7 +209,8 @@ fun BudgetScreen() {
         val list = items ?: emptyList()
         val totalAmount = list.sumOf { it.amount }
         val totalSpent = list.sumOf { it.spent }
-        val remaining = maxOf(0.0, totalAmount - totalSpent)
+        // FIX (UI): قبلاً باقی‌مانده روی صفر قفل می‌شد و اضافه‌خرج دیده نمی‌شد
+        val remaining = totalAmount - totalSpent
         val totalPct = if (totalAmount > 0) (totalSpent / totalAmount * 100.0).toFloat() else 0f
         val monthLabel = "${JDate.J_MONTHS[jm - 1]} ${Fmt.faDigits(jy)}"
 
@@ -426,7 +427,7 @@ private fun TotalCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(Modifier.weight(1f)) {
-                JibetProgress(pct = totalPct, color = jc.accentA)
+                JibetProgress(pct = totalPct, color = jc.budgetBarColor(totalPct))
             }
             Text(
                 Fmt.percent(totalPct.toDouble()),
@@ -455,12 +456,12 @@ private fun TotalCard(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "باقی‌مانده ",
+                    if (remaining < 0) "اضافه‌خرج " else "باقی‌مانده ",
                     style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = jc.inkSoft),
                 )
                 Text(
                     Fmt.money(remaining),
-                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = jc.ink, fontFeatureSettings = "tnum"),
+                    style = TextStyle(fontFamily = Vazir, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = if (remaining < 0) jc.expense else jc.ink, fontFeatureSettings = "tnum"),
                 )
                 Text(
                     " تومان",
@@ -663,8 +664,10 @@ private fun BudgetSheet(
     // سوییچ کیپد اپ ↔ کیبورد سیستم — کنار فیلد مبلغ
     var useSystemKeyboard by rememberSaveable { mutableStateOf(false) }
 
-    // در حالت افزودن فقط دسته‌های بدون بودجه؛ در ویرایش همه با تیکِ دارای‌بودجه
-    val available = if (editing != null) cats else cats.filter { it.id !in existingIds }
+    // FIX (UI): در ویرایش، دسته قفل است (فقط همان دسته نمایش داده می‌شود) — قبلاً همه‌ی دسته‌ها
+    // با «تیک سبز دارای بودجه» نشان داده می‌شدند و با تیک انتخاب اشتباه گرفته می‌شد
+    val available = if (editing != null) cats.filter { it.id == editing.categoryId }
+    else cats.filter { it.id !in existingIds }
     val amountValue = amount.toDoubleOrNull() ?: 0.0
     val canSave = catId != null && amount.isNotEmpty() && amountValue > 0.0 && !saving
 
@@ -713,27 +716,7 @@ private fun BudgetSheet(
                                         colorHex = category.colorHex,
                                         active = category.id == catId,
                                         onClick = { catId = category.id },
-                                        badge = if (existingIds.contains(category.id)) {
-                                            {
-                                                Box(
-                                                    Modifier
-                                                        .size(16.dp)
-                                                        .shadow(3.dp, CircleShape, spotColor = Color(0x33232B3B), ambientColor = Color.Transparent)
-                                                        .clip(CircleShape)
-                                                        .background(jc.income),
-                                                    contentAlignment = Alignment.Center,
-                                                ) {
-                                                    Icon(
-                                                        Icons.Rounded.Check,
-                                                        contentDescription = "دارای بودجه",
-                                                        tint = Color.White,
-                                                        modifier = Modifier.size(11.dp),
-                                                    )
-                                                }
-                                            }
-                                        } else {
-                                            null
-                                        },
+                                        badge = null,
                                     )
                                 }
                                 repeat(3 - rowCats.size) { Spacer(Modifier.weight(1f)) }

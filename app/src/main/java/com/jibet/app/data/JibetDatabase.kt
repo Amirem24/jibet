@@ -27,7 +27,7 @@ class Converters {
         GoalEntity::class,
         RecurringEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -43,9 +43,25 @@ abstract class JibetDatabase : RoomDatabase() {
             }
         }
 
+        /** ۴→۵: ترمیم داده‌های خراب‌شده با باگ آنبوردینگ (kind حساس به حروف کوچک/بزرگ بود):
+         *  دسته‌های درآمدِ پریست که EXPENSE ذخیره شده‌اند و حساب‌های پریست که همه CASH شده‌اند،
+         *  بر اساس نام دقیق پریست اصلاح می‌شوند. دسته/حساب سفارشی کاربر دست نمی‌خورد
+         *  مگر نامش دقیقاً نام یکی از پریست‌های سیستمی باشد. */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "UPDATE categories SET kind = 'INCOME' WHERE kind = 'EXPENSE' AND name IN " +
+                        "('حقوق', 'فروش', 'هدیه', 'سرمایه‌گذاری', 'سایر درآمد')"
+                )
+                db.execSQL("UPDATE accounts SET kind = 'BANK' WHERE kind = 'CASH' AND name = 'کارت بانکی'")
+                db.execSQL("UPDATE accounts SET kind = 'WALLET' WHERE kind = 'CASH' AND name = 'کیف پول الکترونیکی'")
+                db.execSQL("UPDATE accounts SET kind = 'SAVINGS' WHERE kind = 'CASH' AND name = 'پس‌انداز'")
+            }
+        }
+
         fun create(context: Context): JibetDatabase =
             Room.databaseBuilder(context, JibetDatabase::class.java, "jibet.db")
-                .addMigrations(MIGRATION_3_4)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
                 // تنها مسیر عمداً destructive: نسخه‌ی ۱ (نخستین APK باکرش) اسکیمایی
                 // کاملاً متفاوت داشت و هرگز به‌صورت سالم توزیع نشد.
                 // هر ارتقای دیگر «باید» مهاجرت صریح بگیرد وگرنه Room خطا می‌دهد —

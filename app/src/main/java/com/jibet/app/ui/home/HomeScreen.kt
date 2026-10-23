@@ -251,24 +251,18 @@ private fun BalanceCard(totalBalance: Double) {
             )
             .padding(20.dp),
     ) {
-        // حباب‌های نور تزئینی — مثل blur-2xl وب
+        // FIX (UI): حباب‌های blur قبلی روی کارت یک «درز عمودی» سخت می‌ساختند؛
+        // حالا هایلایت شعاعی نرم که لبه‌اش در شفافیت محو می‌شود
         Box(
             Modifier
                 .align(AbsoluteAlignment.TopLeft)
-                .absoluteOffset(x = (-40).dp, y = (-56).dp)
-                .size(160.dp)
-                .blur(30.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.15f)),
-        )
-        Box(
-            Modifier
-                .align(AbsoluteAlignment.BottomRight)
-                .absoluteOffset(x = 24.dp, y = 64.dp)
-                .size(176.dp)
-                .blur(30.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.10f)),
+                .absoluteOffset(x = (-50).dp, y = (-70).dp)
+                .size(210.dp)
+                .background(
+                    Brush.radialGradient(
+                        listOf(Color.White.copy(alpha = 0.16f), Color.Transparent)
+                    )
+                ),
         )
 
         Row(

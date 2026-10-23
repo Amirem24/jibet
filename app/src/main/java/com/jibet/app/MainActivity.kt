@@ -201,7 +201,9 @@ private fun MainApp(app: JibetApp) {
                 .statusBarsPadding()
         ) {
             // مثل main.px-4.pb-32 وب — پدینگ افقی و فضا برای نویگیشن شناور
-            Box(Modifier.weight(1f).padding(horizontal = 16.dp).padding(bottom = 132.dp)) {
+            // FIX (UI): رزرو پایین از ۱۳۲ به ۱۱۶ رسید تا با ارتفاع واقعی نویگیشن (قرص ۶۴ + حاشیه)
+            // هم‌خوان شود و محتوای اسکرول بی‌دلیل زیر یک نوار خالی بریده نشود
+            Box(Modifier.weight(1f).padding(horizontal = 16.dp).padding(bottom = 116.dp)) {
                 AppNavHost(nav)
             }
         }

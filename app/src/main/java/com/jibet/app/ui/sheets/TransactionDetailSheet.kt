@@ -239,7 +239,7 @@ private fun DetailBody(vm: TransactionDetailViewModel, tx: TxRow?) {
     Column(
         Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
+            // اسکرول با خود شیت است (JibetSheet) — اسکرول تو در تو حذف شد
     ) {
         if (!editing) {
             DetailView(

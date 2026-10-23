@@ -414,14 +414,7 @@ fun ScreenHeader(
     Row(
         modifier
             .fillMaxWidth()
-            .padding(top = 12.dp, bottom = 12.dp)
-            .drawBehind {
-                drawRect(
-                    Brush.verticalGradient(
-                        listOf(jc.bgA.copy(alpha = 0.95f), jc.bgA.copy(alpha = 0f))
-                    )
-                )
-            },
+            .padding(top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -970,17 +963,13 @@ fun RowScope.CategoryGridCell(
     val jc = LocalJibetColors.current
     val cc = parseColor(colorHex)
     Box(
+        // FIX (UI): قبلاً سایه + پس‌زمینه‌ی نیمه‌شفاف روی سطح شیت، یک «پلیت سفید» جدا داخل سلول
+        // می‌ساخت و رندر سلول‌ها ناپایدار بود؛ حالا سطح توپر + بوردر ساده، مثل نسخه وب
         modifier
             .weight(1f)
-            .then(
-                if (active) {
-                    Modifier.shadow(10.dp, RoundedCornerShape(16.dp), spotColor = cc.copy(alpha = 0.55f), ambientColor = Color.Transparent)
-                } else {
-                    Modifier.shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x0D232B3B), ambientColor = Color.Transparent)
-                }
-            )
             .clip(RoundedCornerShape(16.dp))
-            .background(if (active) cc else jc.inputBg)
+            .background(if (active) cc else jc.card)
+            .border(1.dp, if (active) cc else jc.border, RoundedCornerShape(16.dp))
             .pressableScale(onClick = onClick, role = Role.Button)
             .padding(horizontal = 8.dp, vertical = 12.dp),
     ) {

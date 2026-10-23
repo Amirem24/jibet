@@ -1,6 +1,8 @@
 package com.jibet.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -105,7 +107,15 @@ fun JibetSheet(
                     }
                 }
             }
-            content()
+            // FIX (UI): فقط بدنه اسکرول می‌شود (هدر ثابت می‌ماند) — فرم‌های بلند مثل ثبت
+            // تراکنش قبلاً از سقف ۹۰٪ شیت بریده می‌شدند و دکمه‌ی ذخیره بیرون کادر می‌ماند
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                content()
+            }
         }
     }
 }

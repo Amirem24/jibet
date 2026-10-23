@@ -3,6 +3,7 @@ package com.jibet.app.ui.nav
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -45,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jibet.app.ui.components.JibetIcon
 import com.jibet.app.ui.components.accentGradient
-import com.jibet.app.ui.components.jibetGlass
 import com.jibet.app.ui.theme.LocalJibetColors
 import com.jibet.app.ui.theme.Vazir
 
@@ -58,7 +59,10 @@ private val TABS = listOf(
     NavTab("more", "بیشتر", Icons.Rounded.MoreHoriz),
 )
 
-/** نویگیشن پایین شیشه‌ای با دکمه‌ی شناور + — مثل BottomNav.tsx وب */
+/** نویگیشن پایین با دکمه‌ی + کامل و برجسته — مثل BottomNav نسخه وب.
+ *  FIX (UI): قبلاً دکمه‌ی + فرزندِ ردیفِ clip‌شده‌ی قرص بود و به‌صورت نیم‌دایره‌ی بریده
+ *  رندر می‌شد و خود قرص هم از پشته‌ی شیشه/سایه/بوردر ناهماهنگ بود؛ حالا قرص یک سطح
+ *  ساده‌ی توپر است و دکمه‌ی + خواهرِ آن و بدون clip، کامل روی لبه می‌نشیند. */
 @Composable
 fun JibetBottomNav(
     current: String,
@@ -66,6 +70,7 @@ fun JibetBottomNav(
     onAdd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val jc = LocalJibetColors.current
     Box(
         modifier
             .fillMaxWidth()
@@ -73,67 +78,60 @@ fun JibetBottomNav(
             .padding(bottom = 12.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        val jc = LocalJibetColors.current
-        // عرض قرص = عرض محتوای صفحه (gutter 16dp) تا لبه‌ها دقیقاً با کارت‌های بالای صفحه تراز شوند
         Row(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .jibetGlass(shape = RoundedCornerShape(26.dp))
+                .height(64.dp)
                 .shadow(
-                    20.dp,
+                    16.dp,
                     RoundedCornerShape(26.dp),
-                    spotColor = if (jc.isDark) Color(0x66000000) else Color(0x47232B3B),
+                    spotColor = if (jc.isDark) Color(0x66000000) else Color(0x33232B3B),
                     ambientColor = Color.Transparent,
                 )
                 .clip(RoundedCornerShape(26.dp))
-                .background(Color.Transparent)
-                .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 8.dp),
+                .background(jc.card)
+                .border(1.dp, jc.border, RoundedCornerShape(26.dp))
+                .padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             TABS.slice(0..1).forEach { tab ->
                 NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) }, modifier = Modifier.weight(1f))
             }
-
-            // دکمه‌ی + — نیمه‌شناور روی لبه‌ی بالایی نویگیشن
-            Box(
-                Modifier
-                    .width(64.dp)
-                    .height(52.dp),
-            ) {
-                val interaction = remember { MutableInteractionSource() }
-                val pressed by interaction.collectIsPressedAsState()
-                val scale by animateFloatAsState(if (pressed) 0.9f else 1f, tween(120), label = "fab")
-                Box(
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = (-28).dp) // نصف قطر ۵۶dp — مثل -translate-y-1/2 وب
-                        .scale(scale)
-                        .shadow(
-                            16.dp,
-                            CircleShape,
-                            spotColor = LocalJibetColors.current.accentA.copy(alpha = 0.6f),
-                            ambientColor = Color.Transparent,
-                        )
-                        .clip(CircleShape)
-                        .background(accentGradient())
-                        .size(56.dp)
-                        .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onAdd),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Rounded.Add,
-                        contentDescription = "ثبت تراکنش جدید",
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
-            }
-
+            // جای خالی دکمه‌ی مرکزی
+            Spacer(Modifier.width(64.dp))
             TABS.slice(2..3).forEach { tab ->
                 NavTabButton(tab = tab, active = current == tab.route, onClick = { onTab(tab.route) }, modifier = Modifier.weight(1f))
             }
+        }
+        // دکمه‌ی + — دایره‌ی کامل، مرکزش روی لبه‌ی بالایی قرص (مثل نسخه وب)
+        val interaction = remember { MutableInteractionSource() }
+        val pressed by interaction.collectIsPressedAsState()
+        val scale by animateFloatAsState(if (pressed) 0.9f else 1f, tween(120), label = "fab")
+        Box(
+            Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = (-26).dp)
+                .scale(scale)
+                .shadow(
+                    16.dp,
+                    CircleShape,
+                    spotColor = LocalJibetColors.current.accentA.copy(alpha = 0.55f),
+                    ambientColor = Color.Transparent,
+                )
+                .clip(CircleShape)
+                .background(accentGradient())
+                .size(56.dp)
+                .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onAdd),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Rounded.Add,
+                contentDescription = "ثبت تراکنش جدید",
+                tint = Color.White,
+                modifier = Modifier.size(26.dp),
+            )
         }
     }
 }
@@ -144,8 +142,6 @@ private fun NavTabButton(tab: NavTab, active: Boolean, onClick: () -> Unit, modi
     val color = if (active) jc.accentA else jc.iconMuted
     Column(
         modifier
-            // مثل w-[68px] وب؛ ولی وزن‌دار تا در صفحه‌های باریک‌تر (۳۶۰dp) سرریز نشود
-            .widthIn(min = 60.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick, role = Role.Tab)
             .padding(top = 6.dp, bottom = 2.dp),
